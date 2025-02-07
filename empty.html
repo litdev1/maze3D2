@@ -4,7 +4,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-    <title>SB Empty Maze</title>
+    <title>SB Maze</title>
 
     <!-- Babylon.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
@@ -87,6 +87,8 @@
             maze;
             walls;
             enemies;
+            players;
+            name;
             step;
             numAnimate;
             cameraAnimate;
@@ -97,13 +99,14 @@
 
                 // Setup the sky background, camera, lights, GUI overlay and key controls
                 this.setup();
-                this.updatePlayers();
 
                 // Create maze
                 this.externalData = {};
                 this.walls = [];
                 this.enemies = [];
+                this.players = [];
                 this.createMaze();
+                this.updatePlayers();
 
                 // Dynamic update ~60fps
                 this.step = 0;
@@ -337,6 +340,23 @@
             }
 
             updatePlayers() {
+                this.externalData["mode"] = 2;
+                globalThis.name = "";
+                fetch('maze3D.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.externalData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        globalThis.name = data.name;
+                    })
+                    .catch(error => {
+                        globalThis.name = "";
+                    });
+
                 const source = new EventSource('maze3Dsse.php');
 
                 source.addEventListener('message', (e) => {
@@ -346,7 +366,6 @@
                     });
                 });
                 source.addEventListener('open', (e) => {
-                    console.log("Connection opened");
                 });
                 source.addEventListener('error', (e) => {
                     if (e.readyState == EventSource.CLOSED) {
@@ -362,8 +381,44 @@
                 const now = new Date();
                 const then = new Date(element.lastActive);
                 const inactiveTime = (now - then) / 1000;
-                if (inactiveTime < 60) {
-                    console.log(element.name, element.posX, element.posZ, element.angle);
+                if (inactiveTime < 60 && globalThis.name !== "" && globalThis.name !== element.name) {
+                    const player = this.players.find(item => item.name === element.name);
+                    if (player === undefined) {
+                        BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
+                            const player = result.meshes[0];
+                            player.checkCollisions = true;
+                            player.name = element.name;
+                            player.rotationQuaternion = null;
+                            player.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
+                            player.position.x = -100;
+                            player.position.y = 0;
+                            player.position.z = -100;
+
+                            const plane = BABYLON.MeshBuilder.CreatePlane("plane" + this.enemies.length.toString());
+                            plane.parent = player;
+                            plane.scaling = new BABYLON.Vector3(20, 20, 20);
+                            plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+                            plane.position.y = 37;
+                            plane.position.z = -3;
+
+                            const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+                            const text = new BABYLON.GUI.TextBlock();
+                            text.color = "green";
+                            text.fontSize = 100;
+                            text.text = element.name;
+                            advancedTexture.addControl(text);
+
+                            const newPlayer = new Player(player);
+                            newPlayer.name = element.name;
+                            this.players.push(newPlayer);
+                            console.log("Player created " + element.name);
+                        });
+                    }
+                    else {
+                        player.mesh.rotation.y = element.angle * Math.PI / 180;
+                        player.mesh.position.x = element.posX;
+                        player.mesh.position.z = element.posZ;
+                    }
                 }
             }
 
@@ -714,6 +769,14 @@
             mesh;
             direction = 0;
             angle = 0;
+            constructor(mesh) {
+                this.mesh = mesh;
+            }
+        }
+
+        class Player {
+            name;
+            mesh;
             constructor(mesh) {
                 this.mesh = mesh;
             }
