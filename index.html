@@ -1,0 +1,748 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+    <title>SB Maze</title>
+
+    <!-- Babylon.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+    <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+    <script src="https://cdn.babylonjs.com/recast.js"></script>
+    <script src="https://cdn.babylonjs.com/ammo.js"></script>
+    <script src="https://cdn.babylonjs.com/havok/HavokPhysics_umd.js"></script>
+    <script src="https://cdn.babylonjs.com/cannon.js"></script>
+    <script src="https://cdn.babylonjs.com/Oimo.js"></script>
+    <script src="https://cdn.babylonjs.com/earcut.min.js"></script>
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+    <script src="https://cdn.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+    <script src="https://cdn.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+    <script src="https://cdn.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+    <script src="https://cdn.babylonjs.com/addons/babylonjs.addons.min.js"></script>
+    <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+    <style>
+        html,
+        body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        #canvasZone {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="canvasZone"><canvas id="renderCanvas"></canvas></div>
+    <script>
+        var canvas = document.getElementById("renderCanvas");
+
+        var startRenderLoop = function (engine, canvas) {
+            engine.runRenderLoop(function () {
+                if (sceneToRender && sceneToRender.activeCamera) {
+                    sceneToRender.render();
+                }
+            });
+        }
+
+        var engine = null;
+        var scene = null;
+        var sceneToRender = null;
+        var createDefaultEngine = function () { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, disableWebGL2Support: false }); };
+        var createScene = function () {
+            // This creates a basic Babylon Scene object (non-mesh)
+            var scene = new BABYLON.Scene(engine);
+
+            // This creates and manages the scene
+            const main = new Main(canvas, scene);
+
+            return scene;
+        };
+
+        class Main {
+            canvas;
+            scene;
+            camera;
+            pressedKeys;
+            externalData;
+            target;
+            advancedTexture;
+            info;
+            maze;
+            walls;
+            enemies;
+            step;
+            numAnimate;
+            cameraAnimate;
+            readyToSend;
+            constructor(canvas, scene) {
+                this.canvas = canvas;
+                this.scene = scene;
+
+                // Setup the sky background, camera, lights, GUI overlay and key controls
+                this.setup();
+                this.updatePlayers();
+
+                // Create maze
+                this.externalData = {};
+                this.walls = [];
+                this.enemies = [];
+                this.createMaze();
+
+                // Dynamic update ~60fps
+                this.step = 0;
+                let lastTime = performance.now();
+                globalThis.numAnimate = 0;
+                globalThis.cameraAnimate = 0;
+                globalThis.readyToSend = true;
+
+                // Game loop
+                this.scene.onBeforeRenderObservable.add(() => {
+                    this.step++;
+                    let dt = (performance.now() - lastTime) / 1000; //seconds
+                    lastTime = performance.now();
+                    this.info.text = "";
+
+                    this.updateSprites();
+                    let dist = this.updateCollisions(dt);
+                    this.updateCamera(dt, dist);
+                });
+            }
+
+            updateCamera(dt, dist) {
+                const x = Math.round(this.camera.position.x);
+                const z = Math.round(this.camera.position.z);
+                //Send to server
+                if (this.step % 100 == 0 || globalThis.readyToSend) {
+                    globalThis.readyToSend = false;
+                    this.externalData["mode"] = 0;
+                    this.externalData["posX"] = this.camera.position.x;
+                    this.externalData["posZ"] = this.camera.position.z;
+                    this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
+                    if (this.externalData["angle"] < 0) this.externalData["angle"] += 360;
+                    this.externalData["dist"] = dist;
+                    this.externalData["cellX"] = x;
+                    this.externalData["cellZ"] = z;
+                    this.externalData["dir270"] = (x > 0 && this.maze[z].charAt(x - 1) != ' ') ? 1 : 0;
+                    this.externalData["dir90"] = (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') ? 1 : 0;
+                    this.externalData["dir180"] = (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') ? 1 : 0;
+                    this.externalData["dir0"] = (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') ? 1 : 0;
+                    // Sending a POST request using Fetch API
+                    fetch('maze3D.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.externalData)
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            this.externalData["ArrowUp"] = data.move;
+                            this.externalData["ArrowLeft"] = data.left;
+                            this.externalData["ArrowRight"] = data.right;
+                            this.externalData["Animate"] = data.animate;
+                            globalThis.readyToSend = true;
+                        })
+                        .catch(error => {
+                            this.externalData["ArrowUp"] = 0;
+                            this.externalData["ArrowLeft"] = 0;
+                            this.externalData["ArrowRight"] = 0;
+                            this.externalData["Animate"] = -1;
+                            globalThis.readyToSend = true;
+                        });
+                }
+
+                if (globalThis.cameraAnimate == 0 && this.externalData["Animate"] >= 0) {
+                    this.externalData["mode"] = 1;
+                    fetch('maze3D.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.externalData)
+                    });
+
+                    this.camera.animations = [];
+
+                    const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                    animRotate.setKeys([
+                        { frame: 0, value: this.camera.rotation.y },
+                        { frame: 30, value: this.rotateTO(this.camera.rotation.y, this.externalData["Animate"] * Math.PI / 180) }
+                    ]);
+                    this.camera.animations.push(animRotate);
+
+                    const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                    const position = new BABYLON.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z);
+                    if (this.externalData["Animate"] == 270 && this.externalData["dir270"] == 1) position.x = x - 1;
+                    else if (this.externalData["Animate"] == 90 && this.externalData["dir90"] == 1) position.x = x + 1;
+                    else if (this.externalData["Animate"] == 180 && this.externalData["dir180"] == 1) position.z = z - 1;
+                    else if (this.externalData["Animate"] == 0 && this.externalData["dir0"] == 1) position.z = z + 1;
+                    animPosition.setKeys([
+                        { frame: 0, value: this.camera.position },
+                        { frame: 60, value: position }
+                    ]);
+                    const animEvent = new BABYLON.AnimationEvent(60,
+                        function () {
+                            globalThis.cameraAnimate--;
+                        },
+                        true
+                    );
+                    animPosition.addEvent(animEvent);
+                    this.camera.animations.push(animPosition);
+
+                    this.scene.beginAnimation(this.camera, 0, 60, false);
+                    globalThis.cameraAnimate++;
+                }
+
+                let yaw = 0;
+                let pitch = 0;
+                let roll = 0;
+                let move = 0;
+                //Time keys down for smoother movement
+                if (this.xor(this.pressedKeys["ArrowUp"], this.externalData["ArrowUp"]) && dist > 0.1)
+                    this.pressedKeys["Up"] += dt;
+                else
+                    this.pressedKeys["Up"] = 0;
+                if (this.xor(this.pressedKeys["ArrowLeft"], this.externalData["ArrowLeft"]))
+                    this.pressedKeys["Left"] += dt;
+                else
+                    this.pressedKeys["Left"] = 0;
+                if (this.xor(this.pressedKeys["ArrowRight"], this.externalData["ArrowRight"]))
+                    this.pressedKeys["Right"] += dt;
+                else
+                    this.pressedKeys["Right"] = 0;
+                //Accelerate more if space down
+                let acc = this.pressedKeys["Space"] ? 2 : 1;
+                //Accelerate movement for first period of key down
+                const accTime = 0.001;
+                move += 1.5 * this.speed * Math.pow(Math.min(this.pressedKeys["Up"], accTime) / accTime, 2) * acc * dt;
+                yaw -= 1.5 * this.speed * Math.pow(Math.min(this.pressedKeys["Left"], accTime) / accTime, 2) * acc * dt;
+                yaw += 1.5 * this.speed * Math.pow(Math.min(this.pressedKeys["Right"], accTime) / accTime, 2) * acc * dt;
+                //info.text += "\n\n" + pitch + " : " + yaw + " : " + roll + " : " + move + " : " + dist;
+                let position = this.camera.position;
+                let lookDirection = this.camera.getTarget().subtract(position).normalize();
+                const quaterion = BABYLON.Quaternion.FromEulerAngles(pitch, yaw, roll);
+                lookDirection = lookDirection.applyRotationQuaternion(quaterion);
+                position = position.add(lookDirection.scale(move));
+                this.camera.setTarget(position.add(lookDirection));
+                this.camera.position = position;
+            }
+
+            xor(a, b) {
+                return (a || b) && !(a && b);
+            }
+
+            rotateTO(angleFrom, angleTo) {
+                if (Math.abs(angleTo - angleFrom) <= Math.PI) return angleTo;
+                else if (Math.abs(angleTo + 2 * Math.PI - angleFrom) <= Math.PI) return angleTo + 2 * Math.PI;
+                else if (Math.abs(angleTo - 2 * Math.PI - angleFrom) <= Math.PI) return angleTo - 2 * Math.PI;
+                return angleTo;
+            }
+
+            updateCollisions(dt) {
+                const pickResult = this.scene.pick(canvas.width / 2, canvas.height / 2); //Canvas center maybe not a good choice for proximity
+                let dist = 1000;
+                let infoDist = "";
+                if (pickResult.hit) {
+                    if (pickResult.pickedMesh.name.startsWith("wall")) {
+                        dist = pickResult.distance;
+                    }
+                    infoDist = pickResult.distance.toFixed(2) + " m (" + pickResult.pickedMesh.name + ")";
+                    //const lookDirection = pickResult.pickedPoint.subtract(camera.position);
+                    //const wallDirection = pickResult.pickedMesh.getFacetNormal(0);
+                    //dist = Math.abs(wallDirection.dot(lookDirection));
+                    //dist = lookDirection.length();
+                }
+                this.info.text += (1 / dt).toFixed(0) + " fps\nDistance " + infoDist;
+                return dist;
+            }
+
+            updateSprites() {
+                if (globalThis.numAnimate == 0) {
+                    for (let i = 0; i < this.enemies.length; i++) {
+                        const enemy = this.enemies[i];
+                        enemy.mesh.animations = [];
+
+                        const x = Math.floor(enemy.mesh.position.x);
+                        const y = Math.floor(enemy.mesh.position.y);
+                        const z = Math.floor(enemy.mesh.position.z);
+
+                        let dirs = [];
+                        if (x > 0 && this.maze[z].charAt(x - 1) != ' ') dirs.push(0);
+                        if (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') dirs.push(1);
+                        if (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') dirs.push(2);
+                        if (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') dirs.push(3);
+
+                        if (dirs.indexOf(enemy.direction) !== -1 && Math.random() > 0.2) {
+                            //Moving forward is an option
+                        }
+                        else if (dirs.length > 0) //Pick one
+                        {
+                            const dir = Math.floor(Math.random() * dirs.length);
+                            enemy.direction = dirs[dir];
+
+                            let angle = 0;
+                            if (enemy.direction == 0) angle = -Math.PI / 2;
+                            else if (enemy.direction == 1) angle = Math.PI / 2;
+                            else if (enemy.direction == 2) angle = Math.PI;
+                            else if (enemy.direction == 3) angle = 0;
+
+                            const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                            animRotate.setKeys([
+                                { frame: 0, value: enemy.angle },
+                                { frame: 30, value: this.rotateTO(enemy.angle, angle) }
+                            ]);
+                            enemy.angle = angle;
+                            enemy.mesh.animations.push(animRotate);
+                        }
+                        const animPosition = new BABYLON.Animation("position", "position", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        const position = new BABYLON.Vector3(enemy.mesh.position.x, enemy.mesh.position.y, enemy.mesh.position.z);
+                        if (enemy.direction == 0) position.x -= 1;
+                        else if (enemy.direction == 1) position.x += 1;
+                        else if (enemy.direction == 2) position.z -= 1;
+                        else if (enemy.direction == 3) position.z += 1;
+                        animPosition.setKeys([
+                            { frame: 0, value: enemy.mesh.position },
+                            { frame: 60, value: position }
+                        ]);
+                        const animEvent = new BABYLON.AnimationEvent(60,
+                            function () {
+                                globalThis.numAnimate--;
+                            },
+                            true
+                        );
+                        animPosition.addEvent(animEvent);
+                        enemy.mesh.animations.push(animPosition);
+
+                        this.scene.beginAnimation(enemy.mesh, 0, 60, false);
+                        globalThis.numAnimate++;
+                    }
+                }
+            }
+
+            updatePlayers() {
+                const source = new EventSource('maze3Dsse.php');
+
+                source.addEventListener('message', (e) => {
+                    const data = JSON.parse(e.data);
+                    data.forEach(element => {
+                        this.updatePlayer(element);
+                    });
+                });
+                source.addEventListener('open', (e) => {
+                    console.log("Connection opened");
+                });
+                source.addEventListener('error', (e) => {
+                    if (e.readyState == EventSource.CLOSED) {
+                        console.log("Connection closed");
+                    }
+                    else {
+                        console.log("Error", e);
+                    }
+                });
+            }
+
+            updatePlayer(element) {
+                const now = new Date();
+                const then = new Date(element.lastActive);
+                const inactiveTime = (now - then) / 1000;
+                if (inactiveTime < 60) {
+                    console.log(element.name, element.posX, element.posZ, element.angle);
+                }
+            }
+
+            keyEvents() {
+                canvas.addEventListener("keydown", e => {
+                    this.pressedKeys[e.code] = true;
+                    //this.info.text = e.code;
+                });
+                canvas.addEventListener("keyup", e => {
+                    this.pressedKeys[e.code] = false;
+                });
+            }
+
+            settings() {       // Maze topology
+                if (true) {
+                    const maze = localStorage.getItem('maze');
+                    if (maze) {
+                        this.maze = JSON.parse(maze);
+                    }
+                    else {
+                        this.maze = [];
+                        this.maze[10] = "XXXc XXXXYXXXXdXXXL";
+                        this.maze[9] = "a  XXXX    ";
+                        this.maze[8] = "X XXc X XaX";
+                        this.maze[7] = "XbX XYXX XX";
+                        this.maze[6] = "       d XX";
+                        this.maze[5] = "XXcX XLXXXX";
+                        this.maze[4] = " L X X     ";
+                        this.maze[3] = " X  XaXXXX ";
+                        this.maze[2] = "YXXYXXXX LX";
+                        this.maze[1] = "b X   X   d";
+                        this.maze[0] = "XXXcXXXbXXX";
+                    }
+                }
+                else {
+                    this.maze = [];
+                    this.maze[4] = "XXbXX";
+                    this.maze[3] = "XXXXX";
+                    this.maze[2] = "XXXXX";
+                    this.maze[1] = "XXXXX";
+                    this.maze[0] = "XXXXX";
+                    this.speed = 1;
+                }
+                const speed = localStorage.getItem('speed');
+                if (speed) {
+                    this.speed = JSON.parse(speed);
+                }
+                else {
+                    this.speed = 1;
+                }
+            }
+
+            setup() {
+                // Background (sky) color - unused if skybox present
+                this.scene.clearColor = new BABYLON.Color4(0.1, 0.3, 0.4, 1);
+
+                // Moving skybox
+                const boxCloud = BABYLON.MeshBuilder.CreateSphere("boxCloud", { segments: 100, diameter: 1000 }, this.scene);
+                boxCloud.position = new BABYLON.Vector3(0, 0, 12);
+                const cloudMaterial = new BABYLON.StandardMaterial("cloudMat", this.scene);
+                const cloudProcText = new BABYLON.CloudProceduralTexture("cloud", 1024, this.scene);
+                cloudMaterial.emissiveTexture = cloudProcText;
+                cloudMaterial.backFaceCulling = false;
+                cloudMaterial.emissiveTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+                boxCloud.material = cloudMaterial;
+                const animRotate = new BABYLON.Animation("rotation", "rotation.y", 0.2, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CYCLE);
+                animRotate.setKeys([
+                    { frame: 0, value: 0 },
+                    { frame: 360, value: 360 }
+                ]);
+                boxCloud.animations.push(animRotate);
+                this.scene.beginAnimation(boxCloud, 0, 360, true);
+
+                // This creates and positions a free camera (non-mesh)
+                this.camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 0.5, 0), this.scene);
+                this.camera.setTarget(new BABYLON.Vector3(0, 0.5, 1));
+                this.camera.minZ = 0.001;
+                this.camera.maxZ = 1000.0;
+                const cameraLight = new BABYLON.PointLight("cameraLight", new BABYLON.Vector3(0, 0, 0), this.scene);
+                cameraLight.range = 5;
+                cameraLight.intensity = 0.3;
+                cameraLight.parent = this.camera;
+
+                // This attaches the camera to the canvas - mouse control
+                //this.camera.attachControl(canvas, true);
+
+                // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+                const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), this.scene);
+                light1.intensity = 0.1;
+                const light2 = new BABYLON.HemisphericLight("light2", new BABYLON.Vector3(0, -1, 0), this.scene);
+                light2.intensity = 0.1;
+
+                // GUI overlay
+                this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+                this.target = new BABYLON.GUI.Image("target", "https://litdev.uk/game_images/uploads/sights.png");
+                this.info = new BABYLON.GUI.TextBlock();
+                this.createGUI();
+
+                // Key controls
+                this.pressedKeys = {};
+                this.keyEvents();
+            }
+
+            createGUI() {
+                this.target.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                this.target.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+                this.target.width = "50px";
+                this.target.height = "50px";
+                this.target.alpha = 0.5;
+                this.advancedTexture.addControl(this.target);
+
+                this.info.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                this.info.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                this.info.color = "red";
+                this.info.fontSize = 12;
+                this.advancedTexture.addControl(this.info);
+            }
+
+            createMaze() {
+                // Read any user settings
+                this.settings();
+
+                // Surface materials
+                let materials = [];
+                this.loadMaterials(materials);
+                let numWallArt = {};
+                const maxWallArt = 1;
+
+                for (let z = 0; z < this.maze.length; z++) {
+                    for (let x = 0; x < this.maze[z].length; x++) {
+                        numWallArt[100 * z + x] = 0;
+                    }
+                }
+
+                for (let z = 0; z < this.maze.length; z++) {
+                    for (let x = 0; x < this.maze[z].length; x++) {
+                        const char = this.maze[z].charAt(x);
+
+                        //Floor-ceiling
+                        if (char !== " ") {
+                            this.createWall(x, z, "Y-", materials[1], char);
+                            this.createWall(x, z, "Y+", materials[2], char);
+                        }
+
+                        //External
+                        //XNEG
+                        if (x == 0) {
+                            const index = numWallArt[100 * z + x] < maxWallArt ? this.wallIndex(char, true) : 0;
+                            if (index > 0) numWallArt[100 * z + x]++;
+                            this.createWall(x, z, "X-", materials[index], char);
+                        }
+                        //XPOS
+                        if (x == this.maze[z].length - 1) {
+                            const index = numWallArt[100 * z + x] < maxWallArt ? this.wallIndex(char, true) : 0;
+                            if (index > 0) numWallArt[100 * z + x]++;
+                            this.createWall(x, z, "X+", materials[index], char);
+                        }
+                        //ZNEG
+                        if (z == 0 || x >= this.maze[z - 1].length) {
+                            const index = numWallArt[100 * z + x] < maxWallArt ? this.wallIndex(char, true) : 0;
+                            if (index > 0) numWallArt[100 * z + x]++;
+                            this.createWall(x, z, "Z-", materials[index], char);
+                        }
+                        //ZPOS
+                        if (z == this.maze.length - 1 || x >= this.maze[z + 1].length) {
+                            const index = numWallArt[100 * z + x] < maxWallArt ? this.wallIndex(char, true) : 0;
+                            if (index > 0) numWallArt[100 * z + x]++;
+                            this.createWall(x, z, "Z+", materials[index], char);
+                        }
+
+                        //Internal
+                        if (char == ' ') {
+                            //XNEG
+                            if (x > 0) {
+                                const index = numWallArt[100 * z + x - 1] < maxWallArt ? this.wallIndex(this.maze[z].charAt(x - 1), false) : 0;
+                                if (index > 0) numWallArt[100 * z + x - 1]++;
+                                this.createWall(x, z, "X-", materials[index], char);
+                            }
+                            //XPOS
+                            if (x < this.maze[z].length - 1) {
+                                const index = numWallArt[100 * z + x + 1] < maxWallArt ? this.wallIndex(this.maze[z].charAt(x + 1), false) : 0;
+                                if (index > 0) numWallArt[100 * z + x + 1]++;
+                                this.createWall(x, z, "X+", materials[index], char);
+                            }
+                            //ZNEG
+                            if (z > 0 && x < this.maze[z - 1].length) {
+                                const index = numWallArt[100 * (z - 1) + x] < maxWallArt ? this.wallIndex(this.maze[z - 1].charAt(x), false) : 0;
+                                if (index > 0) numWallArt[100 * (z - 1) + x]++;
+                                this.createWall(x, z, "Z-", materials[index], char);
+                            }
+                            //ZPOS
+                            if (z < this.maze.length - 1 && x < this.maze[z + 1].length) {
+                                const index = numWallArt[100 * (z + 1) + x] < maxWallArt ? this.wallIndex(this.maze[z + 1].charAt(x), false) : 0;
+                                if (index > 0) numWallArt[100 * (z + 1) + x]++;
+                                this.createWall(x, z, "Z+", materials[index], char);
+                            }
+                        }
+
+                        if (char == 'Y') {
+                            this.createEnemy(x, z);
+                        }
+                        else if (char == 'L') {
+                            const light = new BABYLON.PointLight("light", new BABYLON.Vector3(x, 0.95, z), this.scene);
+                            light.range = 2;
+                            light.diffuse = new BABYLON.Color3(1, 0.8, 0.8);
+                            light.intensity = 0.5;
+                        }
+                    }
+                }
+            }
+
+            wallIndex(char, external) {
+                let index = 0;
+                switch (char) {
+                    case "a":
+                        index = external ? 4 : 3;
+                        break;
+                    case 'b':
+                        index = external ? 6 : 5;
+                        break;
+                    case 'c':
+                        index = external ? 8 : 7;
+                        break;
+                    case 'd':
+                        index = external ? 10 : 9;
+                        break;
+                }
+                return index;
+            }
+
+            loadMaterials(materials) {
+                let i = 0;
+                materials[i] = new BABYLON.StandardMaterial("wall", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/wall.jpg", this.scene);
+                materials[i] = new BABYLON.StandardMaterial("stones", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/stones.jpg", this.scene);
+                materials[i] = new BABYLON.StandardMaterial("water", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/water.jpg", this.scene);
+
+                materials[i] = new BABYLON.StandardMaterial("bug", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/bug.png", this.scene);
+                materials[i] = new BABYLON.StandardMaterial("bugT", this.scene);
+                materials[i].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/bug.png", this.scene);
+                materials[i++].diffuseTexture.hasAlpha = true;
+
+                materials[i] = new BABYLON.StandardMaterial("head", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/head.png", this.scene);
+                materials[i] = new BABYLON.StandardMaterial("headT", this.scene);
+                materials[i].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/head.png", this.scene);
+                materials[i++].diffuseTexture.hasAlpha = true;
+
+                materials[i] = new BABYLON.StandardMaterial("tree", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/Tree.png", this.scene);
+                materials[i] = new BABYLON.StandardMaterial("treeT", this.scene);
+                materials[i].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/Tree.png", this.scene);
+                materials[i++].diffuseTexture.hasAlpha = true;
+
+                materials[i] = new BABYLON.StandardMaterial("coffee", this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/coffee.png", this.scene);
+                materials[i] = new BABYLON.StandardMaterial("coffeeT", this.scene);
+                materials[i].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/coffee.png", this.scene);
+                materials[i++].diffuseTexture.hasAlpha = true;
+            }
+
+            createWall(x, z, side, material, char) {
+                const wall = BABYLON.MeshBuilder.CreatePlane("wall" + this.walls.length.toString(), { sideOrientation: BABYLON.Mesh.DOUBLESIDE }, this.scene);
+                wall.checkCollisions = true;
+
+                switch (side) {
+                    case "X-":
+                        wall.position.x = x - 0.5;
+                        wall.position.y = 0.5;
+                        wall.position.z = z;
+                        wall.material = material;
+                        wall.rotateAround(wall.position, new BABYLON.Vector3(0, 1, 0), Math.PI / 2);
+                        break;
+                    case "X+":
+                        wall.position.x = x + 0.5;
+                        wall.position.y = 0.5;
+                        wall.position.z = z;
+                        wall.material = material;
+                        wall.rotateAround(wall.position, new BABYLON.Vector3(0, 1, 0), Math.PI / 2);
+                        break;
+                    case "Y-":
+                        wall.position.x = x;
+                        wall.position.y = 0;
+                        wall.position.z = z;
+                        wall.material = material;
+                        wall.rotateAround(wall.position, new BABYLON.Vector3(1, 0, 0), Math.PI / 2);
+                        break;
+                    case "Y+":
+                        wall.position.x = x;
+                        wall.position.y = 1;
+                        wall.position.z = z;
+                        wall.material = material;
+                        wall.material.alpha = 0.5;
+                        wall.rotateAround(wall.position, new BABYLON.Vector3(1, 0, 0), Math.PI / 2);
+                        break;
+                    case "Z-":
+                        wall.position.x = x;
+                        wall.position.y = 0.5;
+                        wall.position.z = z - 0.5;
+                        wall.material = material;
+                        break;
+                    case "Z+":
+                        wall.position.x = x;
+                        wall.position.y = 0.5;
+                        wall.position.z = z + 0.5;
+                        wall.material = material;
+                        break;
+                }
+
+                wall.freezeWorldMatrix()
+                this.walls.push(wall);
+            };
+
+            createEnemy(x, z) {
+                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
+                    const enemy = result.meshes[0];
+                    enemy.checkCollisions = true;
+                    enemy.name = "enemy" + this.enemies.length.toString();
+                    enemy.rotationQuaternion = null;
+                    enemy.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
+                    enemy.position.x = x;
+                    enemy.position.y = 0;
+                    enemy.position.z = z;
+
+                    const plane = BABYLON.MeshBuilder.CreatePlane("plane" + this.enemies.length.toString());
+                    plane.parent = enemy;
+                    plane.scaling = new BABYLON.Vector3(20, 20, 20);
+                    plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+                    plane.position.y = 37;
+                    plane.position.z = -3;
+
+                    const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+                    const text = new BABYLON.GUI.TextBlock();
+                    text.color = "orange";
+                    text.fontSize = 100;
+                    text.text = "Yeti " + (1 + this.enemies.length).toString();
+                    advancedTexture.addControl(text);
+
+                    this.enemies.push(new Enemy(enemy));
+                });
+            }
+        }
+
+        class Enemy {
+            mesh;
+            direction = 0;
+            angle = 0;
+            constructor(mesh) {
+                this.mesh = mesh;
+            }
+        }
+
+        window.initFunction = async function () {
+            var asyncEngineCreation = async function () {
+                try {
+                    return createDefaultEngine();
+                } catch (e) {
+                    console.log("the available createEngine function failed. Creating the default engine instead");
+                    return createDefaultEngine();
+                }
+            }
+
+            window.engine = await asyncEngineCreation();
+            if (!engine) throw 'engine should not be null.';
+            startRenderLoop(engine, canvas);
+            window.scene = createScene();
+        };
+        initFunction().then(() => {
+            sceneToRender = scene
+        });
+
+        // Resize
+        window.addEventListener("resize", function () {
+            engine.resize();
+        });
+    </script>
+</body>
+
+</html>
