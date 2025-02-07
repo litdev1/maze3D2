@@ -89,6 +89,7 @@
             enemies;
             players;
             name;
+            userName;
             step;
             numAnimate;
             cameraAnimate;
@@ -105,6 +106,7 @@
                 this.walls = [];
                 this.enemies = [];
                 this.players = [];
+                this.settings();
                 this.createMaze();
                 this.updatePlayers();
 
@@ -135,6 +137,7 @@
                 if (this.step % 100 == 0 || globalThis.readyToSend) {
                     globalThis.readyToSend = false;
                     this.externalData["mode"] = 0;
+                    this.externalData["name"] = this.name;
                     this.externalData["posX"] = this.camera.position.x;
                     this.externalData["posZ"] = this.camera.position.z;
                     this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
@@ -173,6 +176,7 @@
 
                 if (globalThis.cameraAnimate == 0 && this.externalData["Animate"] >= 0) {
                     this.externalData["mode"] = 1;
+                    this.externalData["name"] = this.name;
                     fetch('maze3D.php', {
                         method: 'POST',
                         headers: {
@@ -341,6 +345,7 @@
 
             updatePlayers() {
                 this.externalData["mode"] = 2;
+                this.externalData["name"] = this.name;
                 globalThis.name = "";
                 fetch('maze3D.php', {
                     method: 'POST',
@@ -351,10 +356,10 @@
                 })
                     .then(response => response.json())
                     .then(data => {
-                        globalThis.name = data.name;
+                        globalThis.userName = data.name;
                     })
                     .catch(error => {
-                        globalThis.name = "";
+                        globalThis.userName = "";
                     });
 
                 const source = new EventSource('maze3Dsse.php');
@@ -381,7 +386,7 @@
                 const now = new Date();
                 const then = new Date(element.lastActive);
                 const inactiveTime = (now - then) / 1000;
-                if (inactiveTime < 60 && globalThis.name !== "" && globalThis.name !== element.name) {
+                if (inactiveTime < 60 && globalThis.userName != undefined && globalThis.userName !== "" && globalThis.userName !== element.name) {
                     const player = this.players.find(item => item.name === element.name);
                     if (player === undefined) {
                         BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
@@ -411,7 +416,7 @@
                             const newPlayer = new Player(player);
                             newPlayer.name = element.name;
                             this.players.push(newPlayer);
-                            console.log("Player created " + element.name);
+                            console.log(globalThis.userName, "Player created " + element.name);
                         });
                     }
                     else {
@@ -468,6 +473,13 @@
                 }
                 else {
                     this.speed = 1;
+                }
+                const name = localStorage.getItem('name');
+                if (name) {
+                    this.name = JSON.parse(name);
+                }
+                else {
+                    this.name = "";
                 }
             }
 
@@ -538,9 +550,6 @@
             }
 
             createMaze() {
-                // Read any user settings
-                this.settings();
-
                 // Surface materials
                 let materials = [];
                 this.loadMaterials(materials);
