@@ -62,6 +62,11 @@
             $user->animate = -1;
             $dbHandler->updateUser($user);
         }
+        elseif ($mode === 2)
+        {
+            $response = array('name' => $name);
+            echo json_encode($response);
+        }
 
         if ($logging && $file=fopen('log.txt','a'))
         {
