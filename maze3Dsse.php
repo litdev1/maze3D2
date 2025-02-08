@@ -42,25 +42,7 @@ class DatabaseHandler {
             $result = $this->pdo->query($sql);
             $users = array();
             foreach ($result as $row) {
-                $user = array(
-                    'name' => $row['name'],
-                    'lastActive' => $row['lastActive'],
-                    'posX' => $row['posX'],
-                    'posZ' => $row['posZ'],
-                    'angle' => $row['angle'],
-                    'dist' => $row['dist'],
-                    'move' => $row['move'],
-                    'left' => $row['left'],
-                    'right' => $row['right'],
-                    'cellX' => $row['cellX'],
-                    'cellZ' => $row['cellZ'],
-                    'dir0' => $row['dir0'],
-                    'dir90' => $row['dir90'],
-                    'dir180' => $row['dir180'],
-                    'dir270' => $row['dir270'],
-                    'animate' => $row['animate'],
-                );
-                array_push($users, $user);
+                array_push($users, $row);
             }
             return $users;
         } catch (PDOException $e) {

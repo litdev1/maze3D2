@@ -14,7 +14,7 @@
         // Decode the JSON data
         $data = json_decode($postData, true);
         $mode = $data['mode'];
-        $name = $name . $data['name'];
+        $name = $name . '-' . $data['name'];
 
         if ($mode === 0)
 	    {
@@ -81,7 +81,7 @@
     if (count($keys) > 0) {
         $actionAt = 0;
         if ($keys[0] == 'name') {
-            $name = $name . $_GET[$keys[0]];
+            $name = $name . '-' . $_GET[$keys[0]];
             $actionAt = 1;
         }
 
