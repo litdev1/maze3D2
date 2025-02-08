@@ -311,9 +311,9 @@
                             else if (enemy.direction == 3) angle = 0;
 
                             const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                            animRotate.setKeys([
-                                { frame: 0, value: enemy.angle },
-                                { frame: 30, value: this.rotateTO(enemy.angle, angle) }
+                            animRotate.setKeys([ //+PI due to Dude initially facing backwards
+                                { frame: 0, value: enemy.angle + Math.PI },
+                                { frame: 30, value: this.rotateTO(enemy.angle + Math.PI, angle + Math.PI) }
                             ]);
                             enemy.angle = angle;
                             enemy.mesh.animations.push(animRotate);
@@ -389,35 +389,7 @@
                 if (inactiveTime < 60 && globalThis.userName != undefined && globalThis.userName !== "" && globalThis.userName !== element.name) {
                     const player = this.players.find(item => item.name === element.name);
                     if (player === undefined) {
-                        BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
-                            const player = result.meshes[0];
-                            player.checkCollisions = true;
-                            player.name = element.name;
-                            player.rotationQuaternion = null;
-                            player.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
-                            player.position.x = -100;
-                            player.position.y = 0;
-                            player.position.z = -100;
-
-                            const plane = BABYLON.MeshBuilder.CreatePlane("plane" + this.enemies.length.toString());
-                            plane.parent = player;
-                            plane.scaling = new BABYLON.Vector3(20, 20, 20);
-                            plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-                            plane.position.y = 37;
-                            plane.position.z = -3;
-
-                            const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
-                            const text = new BABYLON.GUI.TextBlock();
-                            text.color = "green";
-                            text.fontSize = 100;
-                            text.text = element.name;
-                            advancedTexture.addControl(text);
-
-                            const newPlayer = new Player(player);
-                            newPlayer.name = element.name;
-                            this.players.push(newPlayer);
-                            console.log(globalThis.userName, "Player created " + element.name);
-                        });
+                        this.createPlayer(-100, -100, element.name);
                     }
                     else {
                         player.mesh.rotation.y = element.angle * Math.PI / 180;
@@ -745,31 +717,67 @@
             };
 
             createEnemy(x, z) {
-                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
+                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.dude.rootUrl, Assets.meshes.dude.filename, this.scene).then((result) => {
                     const enemy = result.meshes[0];
                     enemy.checkCollisions = true;
                     enemy.name = "enemy" + this.enemies.length.toString();
                     enemy.rotationQuaternion = null;
-                    enemy.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
+                    const scale = 0.135 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
+                    enemy.scaling = new BABYLON.Vector3(scale, scale, scale);
                     enemy.position.x = x;
                     enemy.position.y = 0;
                     enemy.position.z = z;
 
                     const plane = BABYLON.MeshBuilder.CreatePlane("plane" + this.enemies.length.toString());
                     plane.parent = enemy;
-                    plane.scaling = new BABYLON.Vector3(20, 20, 20);
+                    plane.scaling = new BABYLON.Vector3(1 / scale, 1 / scale, 1 / scale);
                     plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
-                    plane.position.y = 37;
-                    plane.position.z = -3;
+                    plane.position.y = 0.85 / scale;
+                    plane.position.z = -0.02 / scale;
 
                     const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
                     const text = new BABYLON.GUI.TextBlock();
                     text.color = "orange";
-                    text.fontSize = 100;
-                    text.text = "Yeti " + (1 + this.enemies.length).toString();
+                    text.fontSize = 50;
+                    text.text = "Dude " + (1 + this.enemies.length).toString();
                     advancedTexture.addControl(text);
 
+                    this.scene.beginAnimation(result.skeletons[0], 0, 100, true, 1.0);
                     this.enemies.push(new Enemy(enemy));
+                });
+            }
+
+            createPlayer(x, z, name) {
+                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
+                    const player = result.meshes[0];
+                    player.checkCollisions = true;
+                    player.name = "player" + this.players.length.toString();
+                    player.rotationQuaternion = null;
+                    const scale = 0.75 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Yeti
+                    //const scale = 1 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Alien
+                    player.scaling = new BABYLON.Vector3(scale, scale, scale);
+                    player.position.x = x;
+                    player.position.y = 0;
+                    player.position.z = z;
+
+                    const plane = BABYLON.MeshBuilder.CreatePlane("plane" + this.players.length.toString());
+                    plane.parent = player;
+                    plane.scaling = new BABYLON.Vector3(1 / scale, 1 / scale, 1 / scale);
+                    plane.billboardMode = BABYLON.Mesh.BILLBOARDMODE_ALL;
+                    plane.position.y = 0.85 / scale;
+                    plane.position.z = -0.05 / scale;
+
+                    const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+                    const text = new BABYLON.GUI.TextBlock();
+                    text.color = "yellow";
+                    text.fontSize = 50;
+                    text.text = name;
+                    advancedTexture.addControl(text);
+
+                    const newPlayer = new Player(player);
+                    newPlayer.name = name;
+                    this.players.push(newPlayer);
+                    console.log(globalThis.userName, "Player created " + name);
                 });
             }
         }
