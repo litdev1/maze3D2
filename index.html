@@ -311,9 +311,9 @@
                             else if (enemy.direction == 3) angle = 0;
 
                             const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                            animRotate.setKeys([ //+PI due to Dude initially facing backwards
-                                { frame: 0, value: enemy.angle + Math.PI },
-                                { frame: 30, value: this.rotateTO(enemy.angle + Math.PI, angle + Math.PI) }
+                            animRotate.setKeys([
+                                { frame: 0, value: enemy.angle},
+                                { frame: 30, value: this.rotateTO(enemy.angle, angle) }
                             ]);
                             enemy.angle = angle;
                             enemy.mesh.animations.push(animRotate);
@@ -392,7 +392,7 @@
                         this.createPlayer(-100, -100, element.name);
                     }
                     else {
-                        player.mesh.rotation.y = element.angle * Math.PI / 180;
+                        player.mesh.rotation.y = element.angle * Math.PI / 180 + Math.PI; //+PI since dude is facing backwards
                         player.mesh.position.x = element.posX;
                         player.mesh.position.z = element.posZ;
                     }
@@ -717,12 +717,13 @@
             };
 
             createEnemy(x, z) {
-                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.dude.rootUrl, Assets.meshes.dude.filename, this.scene).then((result) => {
+                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
                     const enemy = result.meshes[0];
                     enemy.checkCollisions = true;
                     enemy.name = "enemy" + this.enemies.length.toString();
                     enemy.rotationQuaternion = null;
-                    const scale = 0.135 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
+                    const scale = 0.75 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Yeti
+                    //const scale = 1 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Alien
                     enemy.scaling = new BABYLON.Vector3(scale, scale, scale);
                     enemy.position.x = x;
                     enemy.position.y = 0;
@@ -739,22 +740,20 @@
                     const text = new BABYLON.GUI.TextBlock();
                     text.color = "orange";
                     text.fontSize = 50;
-                    text.text = "Dude " + (1 + this.enemies.length).toString();
+                    text.text = "Yeti " + (1 + this.enemies.length).toString();
                     advancedTexture.addControl(text);
 
-                    this.scene.beginAnimation(result.skeletons[0], 0, 100, true, 1.0);
                     this.enemies.push(new Enemy(enemy));
                 });
             }
 
             createPlayer(x, z, name) {
-                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
+                BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.dude.rootUrl, Assets.meshes.dude.filename, this.scene).then((result) => {
                     const player = result.meshes[0];
                     player.checkCollisions = true;
                     player.name = "player" + this.players.length.toString();
                     player.rotationQuaternion = null;
-                    const scale = 0.75 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Yeti
-                    //const scale = 1 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Alien
+                    const scale = 0.14 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
                     player.scaling = new BABYLON.Vector3(scale, scale, scale);
                     player.position.x = x;
                     player.position.y = 0;
@@ -774,7 +773,9 @@
                     text.text = name;
                     advancedTexture.addControl(text);
 
-                    const newPlayer = new Player(player);
+                    this.scene.beginAnimation(result.skeletons[0], 0, 100, true, 1.0);
+
+                    const newPlayer = new Player(player, result.skeletons[0]);
                     newPlayer.name = name;
                     this.players.push(newPlayer);
                     console.log(globalThis.userName, "Player created " + name);
@@ -794,8 +795,10 @@
         class Player {
             name;
             mesh;
-            constructor(mesh) {
+            skeleton;
+            constructor(mesh, skeleton) {
                 this.mesh = mesh;
+                this.skeleton = skeleton;
             }
         }
 
