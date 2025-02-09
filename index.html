@@ -24,7 +24,6 @@
     <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
     <script src="https://cdn.babylonjs.com/addons/babylonjs.addons.min.js"></script>
     <script src="https://cdn.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
-    /// <reference path="https://cdnjs.cloudflare.com/ajax/libs/babylonjs/7.43.0/babylon.d.ts" />
 
     <style>
         html,
@@ -164,6 +163,8 @@
                             this.externalData["ArrowLeft"] = data.left;
                             this.externalData["ArrowRight"] = data.right;
                             this.externalData["Animate"] = data.animate;
+                            this.externalData["Rotate"] = data.rotate;
+                            this.externalData["Forward"] = data.forward;
                             globalThis.readyToSend = true;
                         })
                         .catch(error => {
@@ -171,51 +172,105 @@
                             this.externalData["ArrowLeft"] = 0;
                             this.externalData["ArrowRight"] = 0;
                             this.externalData["Animate"] = -1;
+                            this.externalData["Rotate"] = 0;
+                            this.externalData["Forward"] = 0;
                             globalThis.readyToSend = true;
                         });
                 }
 
-                if (globalThis.cameraAnimate == 0 && this.externalData["Animate"] >= 0) {
-                    this.externalData["mode"] = 1;
-                    this.externalData["name"] = this.name;
-                    fetch('maze3D.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(this.externalData)
-                    });
+                if (globalThis.cameraAnimate <= 0) {
+                    globalThis.cameraAnimate = 0;
 
                     this.camera.animations = [];
+                    var maxFrames = 0;
 
-                    const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                    animRotate.setKeys([
-                        { frame: 0, value: this.camera.rotation.y },
-                        { frame: 30, value: this.rotateTO(this.camera.rotation.y, this.externalData["Animate"] * Math.PI / 180) }
-                    ]);
-                    this.camera.animations.push(animRotate);
+                    if (this.externalData["Animate"] != undefined && this.externalData["Animate"] >= 0) {
+                        const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        maxFrames = Math.max(maxFrames, 60);
+                        animRotate.setKeys([
+                            { frame: 0, value: this.camera.rotation.y },
+                            { frame: 30, value: this.rotateTO(this.camera.rotation.y, this.externalData["Animate"] * Math.PI / 180) }
+                        ]);
+                        this.camera.animations.push(animRotate);
 
-                    const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                    const position = new BABYLON.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z);
-                    if (this.externalData["Animate"] == 270 && this.externalData["dir270"] == 1) position.x = x - 1;
-                    else if (this.externalData["Animate"] == 90 && this.externalData["dir90"] == 1) position.x = x + 1;
-                    else if (this.externalData["Animate"] == 180 && this.externalData["dir180"] == 1) position.z = z - 1;
-                    else if (this.externalData["Animate"] == 0 && this.externalData["dir0"] == 1) position.z = z + 1;
-                    animPosition.setKeys([
-                        { frame: 0, value: this.camera.position },
-                        { frame: 60, value: position }
-                    ]);
-                    const animEvent = new BABYLON.AnimationEvent(60,
-                        function () {
-                            globalThis.cameraAnimate--;
-                        },
-                        true
-                    );
-                    animPosition.addEvent(animEvent);
-                    this.camera.animations.push(animPosition);
+                        const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        const position = new BABYLON.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z);
+                        if (this.externalData["Animate"] == 270 && this.externalData["dir270"] == 1) position.x = x - 1;
+                        else if (this.externalData["Animate"] == 90 && this.externalData["dir90"] == 1) position.x = x + 1;
+                        else if (this.externalData["Animate"] == 180 && this.externalData["dir180"] == 1) position.z = z - 1;
+                        else if (this.externalData["Animate"] == 0 && this.externalData["dir0"] == 1) position.z = z + 1;
+                        animPosition.setKeys([
+                            { frame: 0, value: this.camera.position },
+                            { frame: 60, value: position }
+                        ]);
 
-                    this.scene.beginAnimation(this.camera, 0, 60, false);
-                    globalThis.cameraAnimate++;
+                        const animEvent = new BABYLON.AnimationEvent(60,
+                            function () {
+                                globalThis.cameraAnimate--;
+                            },
+                            true
+                        );
+                        animPosition.addEvent(animEvent);
+                        this.camera.animations.push(animPosition);
+                    }
+                    if (this.externalData["Rotate"] != undefined && this.externalData["Rotate"] != 0) {
+                        const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        let rotate = this.externalData["Rotate"];
+                        if (rotate < -180) rotate += 360;
+                        if (rotate > 180) rotate -= 360;
+                        const frames = Math.round(30 * Math.abs(this.externalData["Rotate"]) / 90);
+                        maxFrames = Math.max(maxFrames, frames);
+                        animRotate.setKeys([
+                            { frame: 0, value: this.camera.rotation.y },
+                            { frame: frames, value: this.rotateTO(this.camera.rotation.y, this.camera.rotation.y + this.externalData["Rotate"] * Math.PI / 180) }
+                        ]);
+                        this.camera.animations.push(animRotate);
+                        const animEvent = new BABYLON.AnimationEvent(frames,
+                            function () {
+                                globalThis.cameraAnimate--;
+                            },
+                            true
+                        );
+                        animRotate.addEvent(animEvent);
+                        this.camera.animations.push(animRotate);
+                    }
+                    if (this.externalData["Forward"] != undefined && this.externalData["Forward"] != 0) {
+                        const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
+                        const distance = Math.min(this.externalData["Forward"], dist - 0.1);
+                        let position = this.camera.position;
+                        let lookDirection = this.camera.getTarget().subtract(position).normalize();
+                        position = position.add(lookDirection.scale(distance));
+                        const frames = Math.round(60 * distance);
+                        maxFrames = Math.max(maxFrames, frames);
+                        animPosition.setKeys([
+                            { frame: 0, value: this.camera.position },
+                            { frame: frames, value: position }
+                        ]);
+
+                        const animEvent = new BABYLON.AnimationEvent(frames,
+                            function () {
+                                globalThis.cameraAnimate--;
+                            },
+                            true
+                        );
+                        animPosition.addEvent(animEvent);
+                        this.camera.animations.push(animPosition);
+                    }
+
+                    if (maxFrames > 0) {
+                        this.scene.beginAnimation(this.camera, 0, maxFrames, false);
+                        globalThis.cameraAnimate++;
+
+                        this.externalData["mode"] = 1;
+                        this.externalData["name"] = this.name;
+                        fetch('maze3D.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.externalData)
+                        });
+                    }
                 }
 
                 let yaw = 0;
@@ -313,7 +368,7 @@
 
                             const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
                             animRotate.setKeys([
-                                { frame: 0, value: enemy.angle},
+                                { frame: 0, value: enemy.angle },
                                 { frame: 30, value: this.rotateTO(enemy.angle, angle) }
                             ]);
                             enemy.angle = angle;
@@ -392,6 +447,7 @@
                     if (inactiveTime < 60) {
                         if (player === undefined) {
                             this.createPlayer(-100, -100, element.name);
+                            console.log(globalThis.userName, "Player created " + element.name);
                         }
                         else {
                             player.mesh.rotation.y = element.angle * Math.PI / 180 + Math.PI; //+PI since dude is facing backwards
@@ -400,11 +456,15 @@
                         }
                     }
                     else if (player !== undefined) {
-                        player.mesh.dispose();
-                        let index = players.indexOf(player);
+                        console.log(globalThis.userName, "Player destroyed " + element.name);
+                        let index = this.players.indexOf(player);
                         if (index !== -1) {
-                            players.splice(index, 1);
+                            this.players.splice(index, 1);
                         }
+                        player.mesh.dispose();
+                    }
+                    else {
+                        //console.log(globalThis.userName, "Player not present " + element.name, inactiveTime);
                     }
                 }
             }
@@ -790,7 +850,6 @@
                     const newPlayer = new Player(player, result.skeletons[0]);
                     newPlayer.name = name;
                     this.players.push(newPlayer);
-                    console.log(globalThis.userName, "Player created " + name);
                 });
             }
         }
