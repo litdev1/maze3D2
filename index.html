@@ -341,7 +341,9 @@
                 }
                 this.info.text += (1 / dt).toFixed(0) + " fps";
                 this.info.text += "\nPosition (" + this.camera.position.x.toFixed(2) + "," + this.camera.position.z.toFixed(2) + ")";
-                this.info.text += "\nDirection " + (this.camera.rotation.y * 180 / Math.PI).toFixed(0) + " °";
+                let angle = Math.round(this.camera.rotation.y * 180 / Math.PI);
+                if (angle < 0) angle += 360;
+                this.info.text += "\nDirection " + angle + " °";
                 this.info.text += "\nDistance " + infoDist;
                 return dist;
             }
