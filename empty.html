@@ -628,6 +628,17 @@
                 this.info.color = "red";
                 this.info.fontSize = 12;
                 this.advancedTexture.addControl(this.info);
+
+                var button1 = BABYLON.GUI.Button.CreateSimpleButton("button1", "Open settings");
+                button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                button1.color = "red";
+                button1.fontSize = 12;
+                button1.top = "60px";
+                button1.width = "80px";
+                button1.height = "18px";
+                this.advancedTexture.addControl(button1);
+                button1.onPointerClickObservable.add(() => window.location = "settings.html");
             }
 
             createMaze() {
