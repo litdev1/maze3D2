@@ -25,6 +25,10 @@
             <label>Unique name</label>
             <input type="text" id="name" name="name" size="10"><br>
             <br>
+            <label>Game</label>
+            <input type="text" id="game" name="game" size="10"><br>
+            <br>
+            <button onclick="Maze3DDefaults()">Reset to defaults</button>
             <button onclick="Maze3DSettings()">Apply settings</button><br>
             Reload &#39;SB Maze&#39; to see changes
         </div>
@@ -53,11 +57,23 @@
             The optional 'unique name' identifies this browser session in the case where multiple users are using the same IP address<br> 
             In this case the first web argument sent from SB should match this name<br>
             (e.g. https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get")<br>
+            <br>
+            The optional 'game' identifies a maze world in which only robot players using the same game will be shown<br> 
         </div>
     </div>
 
     <script>
-            Maze3DDefaults();
+            Maze3DInitial();
+
+            function Maze3DInitial() {
+                maze = JSON.parse(localStorage.getItem('maze'));
+                maze.reverse();
+                maze = `${maze.join('\n')}`;
+                document.getElementById('maze').value = maze;
+                document.getElementById('speed').value = JSON.parse(localStorage.getItem('speed'));
+                document.getElementById('name').value = JSON.parse(localStorage.getItem('name'));
+                document.getElementById('game').value = JSON.parse(localStorage.getItem('game'));
+            }
 
             function Maze3DDefaults() {
                 document.getElementById('maze').value = 
@@ -74,6 +90,8 @@
                 "XXXcXXXbXXX";
                 document.getElementById('speed').value = 1;
                 document.getElementById('name').value = "";
+                document.getElementById('game').value = "";
+                Maze3DSettings();
             }
 
             function Maze3DSettings() {
@@ -84,6 +102,8 @@
                 localStorage.setItem('speed', JSON.stringify(speed));
                 name = document.getElementById('name').value;
                 localStorage.setItem('name', JSON.stringify(name));
+                game = document.getElementById('game').value;
+                localStorage.setItem('game', JSON.stringify(game));
             }
     </script>
 </body>

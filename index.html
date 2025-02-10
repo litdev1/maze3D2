@@ -90,6 +90,7 @@
             players;
             name;
             userName;
+            game;
             step;
             numAnimate;
             cameraAnimate;
@@ -138,6 +139,7 @@
                     globalThis.readyToSend = false;
                     this.externalData["mode"] = 0;
                     this.externalData["name"] = this.name;
+                    this.externalData["game"] = this.game;
                     this.externalData["posX"] = this.camera.position.x;
                     this.externalData["posZ"] = this.camera.position.z;
                     this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
@@ -267,6 +269,7 @@
 
                         this.externalData["mode"] = 1;
                         this.externalData["name"] = this.name;
+                        this.externalData["game"] = this.game;
                         fetch('maze3D.php', {
                             method: 'POST',
                             headers: {
@@ -336,7 +339,10 @@
                     //dist = Math.abs(wallDirection.dot(lookDirection));
                     //dist = lookDirection.length();
                 }
-                this.info.text += (1 / dt).toFixed(0) + " fps\nDistance " + infoDist;
+                this.info.text += (1 / dt).toFixed(0) + " fps";
+                this.info.text += "\nPosition (" + this.camera.position.x.toFixed(2) + "," + this.camera.position.z.toFixed(2) + ")";
+                this.info.text += "\nDirection " + (this.camera.rotation.y * 180 / Math.PI).toFixed(0) + " °";
+                this.info.text += "\nDistance " + infoDist;
                 return dist;
             }
 
@@ -406,6 +412,7 @@
             updatePlayers() {
                 this.externalData["mode"] = 2;
                 this.externalData["name"] = this.name;
+                this.externalData["game"] = this.game;
                 globalThis.name = "";
                 fetch('maze3D.php', {
                     method: 'POST',
@@ -446,7 +453,8 @@
                 const now = new Date();
                 const then = new Date(element.lastActive);
                 const inactiveTime = (now - then) / 1000;
-                if (globalThis.userName != undefined && globalThis.userName !== "" && globalThis.userName !== element.name) {
+                //console.log(globalThis.userName, "Player " + element.name + " inactive for " + inactiveTime + "s");
+                if (this.game == element.game && globalThis.userName != undefined && globalThis.userName !== "" && globalThis.userName !== element.name) {
                     const player = this.players.find(item => item.name === element.name);
                     if (inactiveTime < 60) {
                         if (player === undefined) {
@@ -526,6 +534,13 @@
                 }
                 else {
                     this.name = "";
+                }
+                const game = localStorage.getItem('game');
+                if (game) {
+                    this.game = JSON.parse(game);
+                }
+                else {
+                    this.game = "";
                 }
             }
 
@@ -841,6 +856,10 @@
 
             createPlayer(x, z, name) {
                 BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.dude.rootUrl, Assets.meshes.dude.filename, this.scene).then((result) => {
+                    let label = name.slice(name.indexOf('-') + 1);
+                    if (label.length === 0) label = "Unknown";
+                    if (label == "Observer") return;
+
                     const player = result.meshes[0];
                     player.checkCollisions = true;
                     player.name = "player" + this.players.length.toString();
@@ -858,8 +877,6 @@
                     plane.position.y = 0.85 / scale;
                     plane.position.z = -0.05 / scale;
 
-                    let label = name.slice(name.indexOf('-') + 1);
-                    if (label.length === 0) label = "Unknown";
                     const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
                     const text = new BABYLON.GUI.TextBlock();
                     text.color = "yellow";

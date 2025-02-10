@@ -13,6 +13,7 @@ if ($postData !== "") {
     // Decode the JSON data
     $data = json_decode($postData, true);
     $mode = $data['mode'];
+    $game = $data['game'];
     $name = $name . '-' . $data['name'];
 
     if ($mode === 0) // Update user position and return control data
@@ -32,6 +33,7 @@ if ($postData !== "") {
         // Process the data
         $dbHandler = new DatabaseHandler("maze3D.db");
         $user = $dbHandler->getUserByName($name);
+        $user->game = $game;
         $user->posX = $posX;
         $user->posZ = $posZ;
         $user->angle = $angle;
@@ -50,7 +52,8 @@ if ($postData !== "") {
             $user->rotate = 0;
             $user->forward = 0;
         }
-        $dbHandler->updateUser($user); //$dbHandler.delete();
+        $dbHandler->updateUser($user);
+        //$dbHandler.delete();
 
         // Send a response back to the client
         $response = array(
@@ -121,7 +124,8 @@ if (count($keys) > 0) {
                         'dir270' => $user->dir270,
                         'animate' => $user->animate,
                         'rotate' => $user->rotate,
-                        'forward' => $user->forward
+                        'forward' => $user->forward,
+                        'game' => $user->game
                     );
                     echo json_encode($response);
                 } else {
@@ -133,7 +137,7 @@ if (count($keys) > 0) {
                 if ($users !== null) {
                     $response = array();
                     foreach ($users as $user) {
-                        array_push($response, $user->name);
+                        array_push($response, $user->name, $user->game);
                     }
                     echo json_encode($response);
                 } else {
@@ -179,7 +183,8 @@ if (count($keys) > 0) {
 
         if ($logging && $file = fopen('log.txt', 'a')) {
             $info = 'name = ' . $name . 'action = ' . $action . ' move = ' . $user->move . ' left = ' . $user->left . ' right = ' . $user->right .
-                ' animate = ' . $user->animate . ' rotate = ' . $user->rotate . ' forward = ' . $user->forward . "\n";
+                ' animate = ' . $user->animate . ' rotate = ' . $user->rotate . ' forward = ' . $user->forward .
+                ' game = ' . $user->game . "\n";
             fwrite($file, $info);
             fclose($file);
         }
@@ -208,6 +213,8 @@ class User
     public $animate = -1;
     public $rotate = 0;
     public $forward = 0;
+    public $game = "";
+
 
     public function __construct($name, $id = null, $lastActive = null)
     {
@@ -260,7 +267,8 @@ class DatabaseHandler
                     dir270 INTEGER NOT NULL DEFAULT 0,
                     animate INTEGER NOT NULL DEFAULT -1,
                     rotate REAL NOT NULL DEFAULT 0,
-                    forward REAL NOT NULL DEFAULT 0)";
+                    forward REAL NOT NULL DEFAULT 0,
+                    game TEXT NOT NULL DEFAULT '')";
             $this->pdo->exec($sql);
         } catch (PDOException $e) {
             if ($file = fopen('errors.txt', 'a')) {
@@ -294,7 +302,7 @@ class DatabaseHandler
             // Replace data
             $sql = "REPLACE INTO users (id, name, lastActive, posX, posZ, angle, dist, move, left, right, 
             cellX, cellZ, dir0, dir90, dir180, dir270, animate,
-            rotate, forward) VALUES (
+            rotate, forward, game) VALUES (
                     " . $user->id . ",
                     '" . $user->name . "',
                     CURRENT_TIMESTAMP,
@@ -313,7 +321,8 @@ class DatabaseHandler
                     " . $user->dir270 . ",
                     " . $user->animate . ",
                     " . $user->rotate . ",
-                    " . $user->forward . ")";
+                    " . $user->forward . ",
+                    '" . $user->game . "')";
             $this->pdo->exec($sql);
             return true;
         } catch (PDOException $e) {
@@ -369,6 +378,7 @@ class DatabaseHandler
                 $user->animate = $row['animate'];
                 $user->rotate = $row['rotate'];
                 $user->forward = $row['forward'];
+                $user->game = $row['game'];
                 array_push($users, $user);
             }
             return $users;
@@ -407,6 +417,7 @@ class DatabaseHandler
                 $user->animate = $row['animate'];
                 $user->rotate = $row['rotate'];
                 $user->forward = $row['forward'];
+                $user->game = $row['game'];
                 return $user;
             }
         } catch (PDOException $e) {
