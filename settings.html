@@ -1,5 +1,6 @@
 ﻿<!doctype html>
 <html>
+
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>SB Maze Settings</title>
@@ -13,6 +14,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="row">
         <div class="column">
@@ -54,20 +56,27 @@
             Default manual (left/right) rotation is 1.5 radians/s (~86 deg/s)<br>
             Default automatic 90 deg rotation (0.5 s)<br>
             <br>
-            The optional 'unique name' identifies a specific user, which can be useful when users are sharing the same IP address<br> 
+            The optional 'unique name' identifies a specific user, which can be useful when users are sharing the same
+            IP address<br>
             In this case the first web argument sent from SB should match this name<br>
             (e.g. https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get")<br><br>
-            There is also a special user called 'Observer' that can fly out of the maze for an overview and takes no part in any game<br>
+            There is also a special user called 'Observer' that can fly out of the maze for an overview and takes no
+            part in any game<br>
             <br>
-            The optional 'game' identifies a maze world in which only robot players using the same game will be shown<br> 
+            The optional 'game' identifies a maze world in which only robot players using the same game will be
+            shown<br>
         </div>
     </div>
 
     <script>
-            Maze3DInitial();
+        Maze3DInitial();
 
-            function Maze3DInitial() {
-                maze = JSON.parse(localStorage.getItem('maze'));
+        function Maze3DInitial() {
+            maze = JSON.parse(localStorage.getItem('maze'));
+            if (maze == null) {
+                Maze3DDefaults();
+            }
+            else {
                 maze.reverse();
                 maze = `${maze.join('\n')}`;
                 document.getElementById('maze').value = maze;
@@ -75,37 +84,39 @@
                 document.getElementById('name').value = JSON.parse(localStorage.getItem('name'));
                 document.getElementById('game').value = JSON.parse(localStorage.getItem('game'));
             }
+        }
 
-            function Maze3DDefaults() {
-                document.getElementById('maze').value = 
-                "XXXc XXXXYXXXXdXXXL\n"+
-                "a  XXXX\n"+
-                "X XXc X XaX\n"+
-                "XbX XYXX XX\n"+
-                "       d XX\n"+
-                "XXcX XLXXXX\n"+
-                " L X X\n"+
-                " X  XXXXXX\n"+
-                "YXXYXXXX LX\n"+
-                "b X   X   d\n"+
+        function Maze3DDefaults() {
+            document.getElementById('maze').value =
+                "XXXc XXXXYXXXXdXXXL\n" +
+                "a  XXXX\n" +
+                "X XXc X XaX\n" +
+                "XbX XYXX XX\n" +
+                "       d XX\n" +
+                "XXcX XLXXXX\n" +
+                " L X X\n" +
+                " X  XXXXXX\n" +
+                "YXXYXXXX LX\n" +
+                "b X   X   d\n" +
                 "XXXcXXXbXXX";
-                document.getElementById('speed').value = 1;
-                document.getElementById('name').value = "";
-                document.getElementById('game').value = "";
-                Maze3DSettings();
-            }
+            document.getElementById('speed').value = 1;
+            document.getElementById('name').value = "";
+            document.getElementById('game').value = "";
+            Maze3DSettings();
+        }
 
-            function Maze3DSettings() {
-                maze = document.getElementById('maze').value.split('\n');
-                maze.reverse();
-                localStorage.setItem('maze', JSON.stringify(maze));
-                speed = document.getElementById('speed').value;
-                localStorage.setItem('speed', JSON.stringify(speed));
-                name = document.getElementById('name').value;
-                localStorage.setItem('name', JSON.stringify(name));
-                game = document.getElementById('game').value;
-                localStorage.setItem('game', JSON.stringify(game));
-            }
+        function Maze3DSettings() {
+            maze = document.getElementById('maze').value.split('\n');
+            maze.reverse();
+            localStorage.setItem('maze', JSON.stringify(maze));
+            speed = document.getElementById('speed').value;
+            localStorage.setItem('speed', JSON.stringify(speed));
+            name = document.getElementById('name').value;
+            localStorage.setItem('name', JSON.stringify(name));
+            game = document.getElementById('game').value;
+            localStorage.setItem('game', JSON.stringify(game));
+        }
     </script>
 </body>
+
 </html>
