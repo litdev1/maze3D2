@@ -99,6 +99,7 @@
                 this.scene = scene;
 
                 // Setup the sky background, camera, lights, GUI overlay and key controls
+                this.settings();
                 this.setup();
 
                 // Create maze
@@ -106,7 +107,6 @@
                 this.walls = [];
                 this.enemies = [];
                 this.players = [];
-                this.settings();
                 this.createMaze();
                 this.updatePlayers();
 
@@ -126,7 +126,7 @@
 
                     this.updateSprites();
                     let dist = this.updateCollisions(dt);
-                    this.updateCamera(dt, dist);
+                    if (this.name != "Observer") this.updateCamera(dt, dist);
                 });
             }
 
@@ -236,9 +236,13 @@
                     }
                     if (this.externalData["Forward"] != undefined && this.externalData["Forward"] != 0) {
                         const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                        const distance = Math.min(this.externalData["Forward"], dist - 0.1);
                         let position = this.camera.position;
                         let lookDirection = this.camera.getTarget().subtract(position).normalize();
+                        if (false && this.externalData["Rotate"] != 0) {
+                            const quaterion = BABYLON.Quaternion.FromEulerAngles(0, this.externalData["Rotate"] * Math.PI / 180, 0);
+                            lookDirection = lookDirection.applyRotationQuaternion(quaterion);
+                        }
+                        const distance = Math.min(this.externalData["Forward"], dist - 0.1);
                         position = position.add(lookDirection.scale(distance));
                         const frames = Math.round(60 * distance);
                         maxFrames = Math.max(maxFrames, frames);
@@ -546,24 +550,42 @@
                 boxCloud.animations.push(animRotate);
                 this.scene.beginAnimation(boxCloud, 0, 360, true);
 
-                // This creates and positions a free camera (non-mesh)
-                this.camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 0.5, 0), this.scene);
-                this.camera.setTarget(new BABYLON.Vector3(0, 0.5, 1));
+                // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+                const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), this.scene);
+                const light2 = new BABYLON.HemisphericLight("light2", new BABYLON.Vector3(0, -1, 0), this.scene);
+
+                if (this.name == "Observer") {
+                    // This attaches the camera to the canvas - mouse control
+                    this.camera = new BABYLON.FlyCamera("FlyCamera", new BABYLON.Vector3(5, 20, 5), this.scene);
+                    this.camera.attachControl(canvas, true);
+                    this.camera.setTarget(new BABYLON.Vector3(0, 0.5, 0));
+                    // Airplane like rotation, with faster roll correction and banked-turns.
+                    // Default is 100. A higher number means slower correction.
+                    this.camera.rollCorrect = 10;
+                    // Default is false.
+                    this.camera.bankedTurn = false;
+                    // Defaults to 90° in radians in how far banking will roll the camera.
+                    this.camera.bankedTurnLimit = Math.PI / 2;
+                    // How much of the Yawing (turning) will affect the Rolling (banked-turn.)
+                    // Less than 1 will reduce the Rolling, and more than 1 will increase it.
+                    this.camera.bankedTurnMultiplier = 1;
+                    this.camera.speed = 0.1;
+                    light1.intensity = 0.3;
+                    light2.intensity = 0.1;
+                }
+                else {
+                    // This creates and positions a free camera (non-mesh)
+                    this.camera = new BABYLON.FreeCamera("FreeCamera", new BABYLON.Vector3(0, 0.5, 0), this.scene);
+                    this.camera.setTarget(new BABYLON.Vector3(0, 0.5, 1));
+                    light1.intensity = 0.1;
+                    light2.intensity = 0.1;
+                }
                 this.camera.minZ = 0.001;
                 this.camera.maxZ = 1000.0;
                 const cameraLight = new BABYLON.PointLight("cameraLight", new BABYLON.Vector3(0, 0, 0), this.scene);
                 cameraLight.range = 5;
                 cameraLight.intensity = 0.3;
                 cameraLight.parent = this.camera;
-
-                // This attaches the camera to the canvas - mouse control
-                //this.camera.attachControl(canvas, true);
-
-                // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-                const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), this.scene);
-                light1.intensity = 0.1;
-                const light2 = new BABYLON.HemisphericLight("light2", new BABYLON.Vector3(0, -1, 0), this.scene);
-                light2.intensity = 0.1;
 
                 // GUI overlay
                 this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
@@ -608,8 +630,8 @@
                     for (let x = 0; x < this.maze[z].length; x++) {
                         const char = this.maze[z].charAt(x);
 
-                        //Floor-ceiling
-                        if (char !== " ") {
+                        //Floor/ceiling
+                        if (this.name == "Observer" || char !== " ") {
                             this.createWall(x, z, "Y-", materials[1], char);
                             this.createWall(x, z, "Y+", materials[2], char);
                         }
@@ -765,7 +787,7 @@
                         wall.position.y = 1;
                         wall.position.z = z;
                         wall.material = material;
-                        wall.material.alpha = 0.5;
+                        wall.material.alpha = this.name == "Observer" ? 0.2 : 0.5;
                         wall.rotateAround(wall.position, new BABYLON.Vector3(1, 0, 0), Math.PI / 2);
                         break;
                     case "Z-":

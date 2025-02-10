@@ -13,7 +13,8 @@ while (true) {
     ob_flush();
     flush();
 
-    sleep(1);
+    usleep( 100 * 1000 );
+    //sleep(1);
 }
 
 class DatabaseHandler {
