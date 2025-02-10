@@ -95,6 +95,7 @@
             numAnimate;
             cameraAnimate;
             readyToSend;
+            readyToReceive;
             constructor(canvas, scene) {
                 this.canvas = canvas;
                 this.scene = scene;
@@ -117,6 +118,7 @@
                 globalThis.numAnimate = 0;
                 globalThis.cameraAnimate = 0;
                 globalThis.readyToSend = true;
+                globalThis.readyToReceive = true;
 
                 // Game loop
                 this.scene.onBeforeRenderObservable.add(() => {
@@ -137,6 +139,7 @@
                 //Send to server
                 if (this.step % 100 == 0 || globalThis.readyToSend) {
                     globalThis.readyToSend = false;
+                    globalThis.readyToReceive = true;
                     this.externalData["mode"] = 0;
                     this.externalData["name"] = this.name;
                     this.externalData["game"] = this.game;
@@ -161,22 +164,26 @@
                     })
                         .then(response => response.json())
                         .then(data => {
-                            this.externalData["ArrowUp"] = data.move;
-                            this.externalData["ArrowLeft"] = data.left;
-                            this.externalData["ArrowRight"] = data.right;
-                            this.externalData["Animate"] = data.animate;
-                            this.externalData["Rotate"] = data.rotate;
-                            this.externalData["Forward"] = data.forward;
-                            globalThis.readyToSend = true;
+                            if (globalThis.readyToReceive) {
+                                this.externalData["ArrowUp"] = data.move;
+                                this.externalData["ArrowLeft"] = data.left;
+                                this.externalData["ArrowRight"] = data.right;
+                                this.externalData["Animate"] = data.animate;
+                                this.externalData["Rotate"] = data.rotate;
+                                this.externalData["Forward"] = data.forward;
+                                globalThis.readyToSend = true;
+                            }
                         })
                         .catch(error => {
-                            this.externalData["ArrowUp"] = 0;
-                            this.externalData["ArrowLeft"] = 0;
-                            this.externalData["ArrowRight"] = 0;
-                            this.externalData["Animate"] = -1;
-                            this.externalData["Rotate"] = 0;
-                            this.externalData["Forward"] = 0;
-                            globalThis.readyToSend = true;
+                            if (globalThis.readyToReceive) {
+                                this.externalData["ArrowUp"] = 0;
+                                this.externalData["ArrowLeft"] = 0;
+                                this.externalData["ArrowRight"] = 0;
+                                this.externalData["Animate"] = -1;
+                                this.externalData["Rotate"] = 0;
+                                this.externalData["Forward"] = 0;
+                                globalThis.readyToSend = true;
+                            }
                         });
                 }
 
@@ -217,10 +224,7 @@
                     }
                     if (this.externalData["Rotate"] != undefined && this.externalData["Rotate"] != 0) {
                         const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                        let rotate = this.externalData["Rotate"];
-                        if (rotate < -180) rotate += 360;
-                        if (rotate > 180) rotate -= 360;
-                        const frames = Math.round(30 * Math.abs(this.externalData["Rotate"]) / 90);
+                        const frames = Math.max(1, Math.round(30 * Math.abs(this.externalData["Rotate"]) / 90));
                         maxFrames = Math.max(maxFrames, frames);
                         animRotate.setKeys([
                             { frame: 0, value: this.camera.rotation.y },
@@ -246,7 +250,7 @@
                         }
                         const distance = Math.min(this.externalData["Forward"], dist - 0.1);
                         position = position.add(lookDirection.scale(distance));
-                        const frames = Math.round(60 * distance);
+                        const frames = Math.max(1, Math.round(60 * distance));
                         maxFrames = Math.max(maxFrames, frames);
                         animPosition.setKeys([
                             { frame: 0, value: this.camera.position },
@@ -264,8 +268,12 @@
                     }
 
                     if (maxFrames > 0) {
-                        this.scene.beginAnimation(this.camera, 0, maxFrames, false);
                         globalThis.cameraAnimate++;
+                        globalThis.readyToReceive = false;
+                        this.externalData["Animate"] = -1;
+                        this.externalData["Rotate"] = 0;
+                        this.externalData["Forward"] = 0;
+                        this.scene.beginAnimation(this.camera, 0, maxFrames, false);
 
                         this.externalData["mode"] = 1;
                         this.externalData["name"] = this.name;
@@ -276,7 +284,14 @@
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify(this.externalData)
-                        });
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                globalThis.readyToReceive = true;
+                            })
+                            .catch(error => {
+                                globalThis.readyToReceive = true;
+                            });
                     }
                 }
 

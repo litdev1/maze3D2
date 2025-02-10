@@ -73,6 +73,7 @@ if ($postData !== "") {
         $user->rotate = 0;
         $user->forward = 0;
         $dbHandler->updateUser($user);
+        echo json_encode("Completed");
     } elseif ($mode === 2) //Get name
     {
         $response = array('name' => $name);
