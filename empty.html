@@ -91,6 +91,7 @@
             name;
             userName;
             game;
+            state;
             step;
             numAnimate;
             cameraAnimate;
@@ -114,6 +115,7 @@
 
                 // Dynamic update ~60fps
                 this.step = 0;
+                this.state = 0;
                 let lastTime = performance.now();
                 globalThis.numAnimate = 0;
                 globalThis.cameraAnimate = 0;
@@ -143,6 +145,7 @@
                     this.externalData["mode"] = 0;
                     this.externalData["name"] = this.name;
                     this.externalData["game"] = this.game;
+                    this.externalData["state"] = this.state;
                     this.externalData["posX"] = this.camera.position.x;
                     this.externalData["posZ"] = this.camera.position.z;
                     this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
