@@ -633,7 +633,7 @@
                 this.keyEvents();
             }
 
-            createGUI() {              
+            createGUI() {
                 this.target.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
                 this.target.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
                 this.target.width = "50px";
@@ -663,7 +663,7 @@
                 user.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
                 user.color = "red";
                 user.fontSize = 24;
-                user.text = this.name;
+                user.text = this.name + (this.game == "" ? "" : " (" + this.game + ")");
                 user.top = "0px";
                 user.height = "36px";
                 this.advancedTexture.addControl(user);
