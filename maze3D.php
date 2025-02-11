@@ -142,7 +142,7 @@ if (count($keys) > 0) {
                 if ($users !== null) {
                     $response = array();
                     foreach ($users as $user) {
-                        if ($user->game == $game) {
+                        if ($user->game == $game && $user->activeTime() < 60) {
                             array_push($response, $user->name, $user->state, $user->posX, $user->posZ);
                         }
                     }

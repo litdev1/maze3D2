@@ -30,9 +30,10 @@
             <label>Game</label>
             <input type="text" id="game" name="game" size="10"><br>
             <br>
-            <button onclick="Maze3DDefaults()">Reset to defaults</button>
-            <button onclick="Maze3DSettings()">Apply settings</button><br>
-            Reload &#39;SB Maze&#39; to see changes
+            <button onclick="Maze3DDefaults()">Reset to defaults</button> 
+            <button onclick="Maze3DSettings()">Apply settings</button><br><br>
+            Reload &#39;SB Maze&#39; to see changes<br><br>
+            <button onclick="ReloadMaze()">Apply and reload SB Maze</button><br>
         </div>
         <div class="column">
         </div>
@@ -115,6 +116,11 @@
             localStorage.setItem('name', JSON.stringify(name));
             game = document.getElementById('game').value;
             localStorage.setItem('game', JSON.stringify(game));
+        }
+
+        function ReloadMaze() {
+            Maze3DSettings();
+            window.location.href = "index.html";
         }
     </script>
 </body>
