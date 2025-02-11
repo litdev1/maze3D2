@@ -5,43 +5,70 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>SB Maze Settings</title>
     <style>
+        .main {
+            background-color: #faffff;
+        }
+
+        .inpt {
+            padding: 4px 4px;
+            border: 1px solid black;
+            border-radius: 4px;
+            background-color: #ffffff;
+        }
+
         .row {
             display: flex;
         }
 
         .column {
-            padding: 10px 10px 10px 0px;
+            padding: 10px 10px 10px 10px;
+        }
+
+        .btn {
+            padding: 4px 4px;
+            border: 1px solid black;
+            color: black;
+            cursor: pointer;
+            margin: 4px 0px;
+            width: 200px;
+            background-color: lightblue;
+            border-radius: 4px;
+        }
+
+        .btn:hover {
+            color: white;
+            background-color: darkblue;
         }
     </style>
 </head>
 
-<body>
+<body class="main">
     <div class="row">
         <div class="column">
-            <label>Maze topology</label><br>
-            <textarea id="maze" name="maze" rows="30" cols="30"></textarea><br>
+            <label><strong>Maze topology</strong></label><br><br>
+            <textarea class="inpt" id="maze" name="maze" rows="30" cols="30"></textarea><br>
             <br>
+            <label><strong>Settings</strong></label><br><br>
             <label>Speed multiplier</label>
-            <input type="text" id="speed" name="speed" size="4"><br>
+            <input class="inpt" type="text" id="speed" name="speed" size="4"><br>
             <br>
-            <label>Unique name</label>
-            <input type="text" id="name" name="name" size="10"><br>
+            <label>Player name</label>
+            <input class="inpt" type="text" id="name" name="name" size="10"><br>
             <br>
-            <label>Game</label>
-            <input type="text" id="game" name="game" size="10"><br>
+            <label>Game name</label>
+            <input class="inpt" type="text" id="game" name="game" size="10"><br>
             <br>
-            <button onclick="Maze3DDefaults()">Reset to defaults</button> 
-            <button onclick="Maze3DSettings()">Apply settings</button><br><br>
-            Reload &#39;SB Maze&#39; to see changes<br><br>
-            <button onclick="ReloadMaze()">Apply and reload SB Maze</button><br>
+            <button class="btn" onclick="Maze3DDefaults()">Reset to defaults</button><br>
+            <button class="btn" onclick="Maze3DSettings()">Apply settings</button><br>
+            <button class="btn" onclick="ReloadMaze()">Apply and reload maze</button><br>
         </div>
         <div class="column">
         </div>
         <div class="column">
-            <label>Legend</label><br>
+            <label><strong>Legend</strong></label><br>
             <br>
-            Each row of characters represent the maze cells in increasing (initially forwards) Z direction<br>
-            The text characters within each row reresent the maze cells in the X (initially right) direction<br>
+            Each row of characters represent the maze cells in increasing (initially forwards) Z direction.<br>
+            The text characters within each row reresent the maze cells in the X (initially right) direction.<br>
             <br>
             X is an active cell<br>
             An empty space is a walled cell<br>
@@ -57,15 +84,32 @@
             Default manual (left/right) rotation is 1.5 radians/s (~86 deg/s)<br>
             Default automatic 90 deg rotation (0.5 s)<br>
             <br>
-            The optional 'unique name' identifies a specific user, which can be useful when users are sharing the same
-            IP address<br>
-            In this case the first web argument sent from SB should match this name<br>
-            (e.g. https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get")<br><br>
-            There is also a special user called 'Observer' that can fly out of the maze for an overview and takes no
-            part in any game<br>
+            The optional 'Player name' identifies a specific user, which can be useful when users are sharing the same
+            IP address or there are multiple players in a game. In this case the first web argument sent from Small
+            Basic should match this name. (e.g. https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get")<br><br>
+            There is also a special player called 'Observer' that can fly out of the maze for an overview and takes no
+            part in any game.<br><br>
+            The optional 'Game name' identifies a maze world in which only robot players using the same game will be
+            shown.<br><br>
+            Player and game names are case sensitive and the maze should be reloaded after applying changes.<br><br>
+            <label><strong>Commands</strong></label><br>
             <br>
-            The optional 'game' identifies a maze world in which only robot players using the same game will be
-            shown<br>
+            Control commands are sent directly to the webservice at https://litdev.uk/apps/maze3D/maze3D.php?.
+            This may be from Small Basic using LitDev extension (1.29.150.0+) with command LDNetwork.SendWebRequest.
+            Commands can also be entered directly into a browser for test purposes, or from any other WebRequest
+            service.<br><br>
+            Multiple arguments are separated by '&'. The first argument is optionally a user name e.g. 'name=Steve' and
+            the next (or first argumet) is an action.<br><br>
+            'action=get' returns various user details (position, neighbour cells etc).<br>
+            'action=getAll' returns basic position data for all users in the current game.<br>
+            'action=set' sends commands to the current user, options are:<br><br>
+            Continuous movement: 'move=1' move forwards, 'left=1' rotate anti-clockwise, 'right=1' rotate clockwise.<br>
+            'move=0', 'left=0', 'right=0' stop movements.<br><br>
+            Animate to adjacent available cell: 'animate=0', 'animate=90', 'animate=180', 'animate=270'.<br><br>
+            Move a controlled amount: 'rotate=A', 'forward=B' where A is a clockwise angle and B is a distance (cells
+            are 1x1).<br><br>
+            Support, discussion and examples at <a href="https://litdev.uk/mybb/showthread.php?tid=223">Small Basic
+                forum</a>.
         </div>
     </div>
 

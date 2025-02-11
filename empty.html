@@ -633,9 +633,9 @@
                 this.keyEvents();
             }
 
-            createGUI() {
-                this.target.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-                this.target.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+            createGUI() {              
+                this.target.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                this.target.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
                 this.target.width = "50px";
                 this.target.height = "50px";
                 this.target.alpha = 0.5;
@@ -657,6 +657,16 @@
                 button1.height = "18px";
                 this.advancedTexture.addControl(button1);
                 button1.onPointerClickObservable.add(() => window.location = "settings.html");
+
+                var user = new BABYLON.GUI.TextBlock();
+                user.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                user.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                user.color = "red";
+                user.fontSize = 24;
+                user.text = this.name;
+                user.top = "0px";
+                user.height = "36px";
+                this.advancedTexture.addControl(user);
             }
 
             createMaze() {
