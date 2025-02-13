@@ -1,7 +1,7 @@
 <?php
-define('MUTEX_KEY', 123456);
-sem_get(MUTEX_KEY, 1, 0666, 1);
-sem_acquire(($resource = sem_get(MUTEX_KEY)));
+//define('MUTEX_KEY', 123456);
+//sem_get(MUTEX_KEY, 1, 0666, 1);
+//sem_acquire(($resource = sem_get(MUTEX_KEY)));
 
 $ip = $_SERVER['REMOTE_ADDR'];
 $name = $ip;
@@ -191,13 +191,13 @@ if (count($keys) > 0) {
         if ($logging && $file = fopen('log.txt', 'a')) {
             $info = 'name = ' . $name . 'action = ' . $action . ' move = ' . $user->move . ' left = ' . $user->left . ' right = ' . $user->right .
                 ' animate = ' . $user->animate . ' rotate = ' . $user->rotate . ' forward = ' . $user->forward .
-                ' game = ' . $user->game . $user->state . "\n";
+                ' game = ' . $user->game . ' state = ' . $user->state . "\n";
             fwrite($file, $info);
             fclose($file);
         }
     }
 }
-sem_release($resource);
+//sem_release($resource);
 
 class User
 {
@@ -221,7 +221,7 @@ class User
     public $rotate = 0;
     public $forward = 0;
     public $game = "";
-    public $state = 0;
+    public $state = "";
 
 
     public function __construct($name, $id = null, $lastActive = null)
@@ -277,7 +277,7 @@ class DatabaseHandler
                     rotate REAL NOT NULL DEFAULT 0,
                     forward REAL NOT NULL DEFAULT 0,
                     game TEXT NOT NULL DEFAULT '',
-                    state INTEGER NOT NULL DEFAULT 0)";
+                    state TEXT NOT NULL DEFAULT '')";
             $this->pdo->exec($sql);
         } catch (PDOException $e) {
             if ($file = fopen('errors.txt', 'a')) {
@@ -332,7 +332,7 @@ class DatabaseHandler
                     " . $user->rotate . ",
                     " . $user->forward . ",
                     '" . $user->game . "',
-                    " . $user->state . ")";
+                    '" . $user->state . "')";
             $this->pdo->exec($sql);
             return true;
         } catch (PDOException $e) {

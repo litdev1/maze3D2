@@ -82,6 +82,7 @@
             pressedKeys;
             externalData;
             target;
+            heading;
             advancedTexture;
             info;
             maze;
@@ -91,6 +92,8 @@
             name;
             userName;
             game;
+            objective;
+            objectiveData;
             state;
             step;
             numAnimate;
@@ -113,9 +116,12 @@
                 this.createMaze();
                 this.updatePlayers();
 
+                //Objectives
+                this.objectiveData = new ObjectiveData(this.maze);
+
                 // Dynamic update ~60fps
                 this.step = 0;
-                this.state = 0;
+                this.state = this.objective;
                 let lastTime = performance.now();
                 globalThis.numAnimate = 0;
                 globalThis.cameraAnimate = 0;
@@ -131,13 +137,29 @@
 
                     this.updateSprites();
                     let dist = this.updateCollisions(dt);
-                    if (this.name != "Observer") this.updateCamera(dt, dist);
+                    if (this.name != "Observer") {
+                        this.updateCamera(dt, dist);
+                        this.updateObjective();
+                    }
                 });
+            }
+
+            updateObjective() {
+                this.heading.text = this.name + (this.game == "" ? "" : " (" + this.game + ")");
+                switch (this.objective) {
+                    case "None":
+                        break;
+                    case "Visit all cells": Enemy
+                        let numVisited = this.objectiveData.numVisited();
+                        this.heading.text += "\n" + this.objective + " " + Math.round(100 * this.objectiveData.numVisited() / this.objectiveData.numCells) + " %";
+                        break;
+                }
             }
 
             updateCamera(dt, dist) {
                 const x = Math.round(this.camera.position.x);
                 const z = Math.round(this.camera.position.z);
+                this.objectiveData.visited[x + "," + z] = true;
                 //Send to server
                 if (this.step % 100 == 0 || globalThis.readyToSend) {
                     globalThis.readyToSend = false;
@@ -562,6 +584,13 @@
                 else {
                     this.game = "";
                 }
+                const objective = localStorage.getItem('objective');
+                if (objective) {
+                    this.objective = JSON.parse(objective);
+                }
+                else {
+                    this.objective = "None";
+                }
             }
 
             setup() {
@@ -604,8 +633,8 @@
                     // How much of the Yawing (turning) will affect the Rolling (banked-turn.)
                     // Less than 1 will reduce the Rolling, and more than 1 will increase it.
                     this.camera.bankedTurnMultiplier = 1;
-                    this.camera.speed = 0.1;
-                    light1.intensity = 0.3;
+                    this.camera.speed = 0.25;
+                    light1.intensity = 0.4;
                     light2.intensity = 0.1;
                 }
                 else {
@@ -625,6 +654,7 @@
                 // GUI overlay
                 this.advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
                 this.target = new BABYLON.GUI.Image("target", "https://litdev.uk/game_images/uploads/sights.png");
+                this.heading = new BABYLON.GUI.TextBlock();
                 this.info = new BABYLON.GUI.TextBlock();
                 this.createGUI();
 
@@ -650,23 +680,24 @@
                 var button1 = BABYLON.GUI.Button.CreateSimpleButton("button1", "Open settings");
                 button1.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
                 button1.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-                button1.color = "red";
+                button1.color = "white";
                 button1.fontSize = 12;
                 button1.top = "60px";
-                button1.width = "80px";
+                button1.width = "90px";
                 button1.height = "18px";
+                button1.background = "red";
+                button1.alpha = 0.5;
                 this.advancedTexture.addControl(button1);
                 button1.onPointerClickObservable.add(() => window.location = "settings.html");
 
-                var user = new BABYLON.GUI.TextBlock();
-                user.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-                user.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-                user.color = "red";
-                user.fontSize = 24;
-                user.text = this.name + (this.game == "" ? "" : " (" + this.game + ")");
-                user.top = "0px";
-                user.height = "36px";
-                this.advancedTexture.addControl(user);
+                this.heading.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+                this.heading.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                this.heading.color = "red";
+                this.heading.fontSize = 24;
+                this.heading.top = "0px";
+                this.heading.height = "60px";
+                this.heading.width = "500px";
+                this.advancedTexture.addControl(this.heading);
             }
 
             createMaze() {
@@ -950,6 +981,25 @@
             constructor(mesh, skeleton) {
                 this.mesh = mesh;
                 this.skeleton = skeleton;
+            }
+        }
+
+        class ObjectiveData {
+            numCells;
+            visited;
+            constructor(maze) {
+                this.numCells = 0;
+                for (let z = 0; z < maze.length; z++) {
+                    for (let x = 0; x < maze[z].length; x++) {
+                        const char = maze[z].charAt(x);
+                        if (char != ' ') this.numCells++;
+                    }
+                }
+                this.visited = {};
+            }
+
+            numVisited() {
+                return Object.keys(this.visited).length;
             }
         }
 

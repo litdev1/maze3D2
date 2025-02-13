@@ -16,6 +16,13 @@
             background-color: #ffffff;
         }
 
+        .combo {
+            padding: 4px 4px;
+            border: 1px solid black;
+            border-radius: 4px;
+            background-color: #ffffff;
+        }
+
         .row {
             display: flex;
         }
@@ -60,6 +67,14 @@
             <br>
             <button class="btn" onclick="Maze3DDefaults()">Reset to defaults</button><br>
             <button class="btn" onclick="Maze3DSettings()">Apply settings</button><br>
+            <br>
+            <label>Choose a game objective</label><br>
+            <select class="btn" id="objective" name="objective">
+                <option value="None">None</option>
+                <option value="Visit all cells">Visit all cells</option>
+            </select>
+            <br>
+            <br>
             <button class="btn" onclick="ReloadMaze()">Apply and reload maze</button><br>
         </div>
         <div class="column">
@@ -109,7 +124,10 @@
             Move a controlled amount: 'rotate=A', 'forward=B' where A is a clockwise angle and B is a distance (cells
             are 1x1).<br><br>
             Support, discussion and examples at <a href="https://litdev.uk/mybb/showthread.php?tid=223">Small Basic
-                forum</a>.
+                forum</a>.<br><br>
+            <label><strong>Game objectives</strong></label><br><br>
+            Optionally select a game objective.  This will not affect anything other than reporting of the game objective progress.<br>
+            <br>
         </div>
     </div>
 
@@ -125,9 +143,16 @@
                 maze.reverse();
                 maze = `${maze.join('\n')}`;
                 document.getElementById('maze').value = maze;
+
                 document.getElementById('speed').value = JSON.parse(localStorage.getItem('speed'));
                 document.getElementById('name').value = JSON.parse(localStorage.getItem('name'));
                 document.getElementById('game').value = JSON.parse(localStorage.getItem('game'));
+                document.getElementById('objective').value = JSON.parse(localStorage.getItem('objective'));
+
+                if (document.getElementById('speed').value == null) document.getElementById('speed').value = 1;
+                if (document.getElementById('name').value == null) document.getElementById('name').value = "";
+                if (document.getElementById('game').value == null) document.getElementById('game').value = "";
+                if (document.getElementById('objective').value == null || document.getElementById('objective').value == "") document.getElementById('objective').value = "None";
             }
         }
 
@@ -147,6 +172,8 @@
             document.getElementById('speed').value = 1;
             document.getElementById('name').value = "";
             document.getElementById('game').value = "";
+            document.getElementById('objective').value = "None";
+
             Maze3DSettings();
         }
 
@@ -160,6 +187,8 @@
             localStorage.setItem('name', JSON.stringify(name));
             game = document.getElementById('game').value;
             localStorage.setItem('game', JSON.stringify(game));
+            objective = document.getElementById('objective').value;
+            localStorage.setItem('objective', JSON.stringify(objective));
         }
 
         function ReloadMaze() {
