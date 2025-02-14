@@ -173,7 +173,7 @@
                                     }
                                 });
                                 if (!otherIt) {
-                                    this.setState(globalThis.userName, "TagIt")
+                                    this.setState(globalThis.userName, "TagIt");
                                     console.log("Initial TagIt");
                                 };
                             }
@@ -190,16 +190,16 @@
                                         this.camera.position.z = 0;
                                         this.camera.setTarget(this.camera.position.add(new BABYLON.Vector3(0, 0, 1)));
                                         console.log("Revert to Tag");
-                                        this.setState(globalThis.userName, "Tag")
+                                        this.setState(globalThis.userName, "Tag");
                                         console.log("Other to TagIt");
-                                        this.setState(player.name, "TagIt")
+                                        this.setState(player.name, "TagIt");
                                         return false;
                                     }
                                     return true;
                                 });
                             }
 
-                            this.heading.text += "\n" + this.objective + " : " + (this.state === "TagIt" ? "You are it" : "");
+                            this.heading.text += "\n" + this.objective + " : " + (this.state === "TagIt" ? "You are IT" : "");
                             break;
                     }
                 }
