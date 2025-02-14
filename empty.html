@@ -145,15 +145,83 @@
             }
 
             updateObjective() {
-                this.heading.text = this.name + (this.game == "" ? "" : " (" + this.game + ")");
-                switch (this.objective) {
-                    case "None":
-                        break;
-                    case "Visit all cells": Enemy
-                        let numVisited = this.objectiveData.numVisited();
-                        this.heading.text += "\n" + this.objective + " " + Math.round(100 * this.objectiveData.numVisited() / this.objectiveData.numCells) + " %";
-                        break;
+                this.heading.text = this.name + (this.game === "" ? "" : " (" + this.game + ")");
+                let time;
+                if (globalThis.userName != undefined && globalThis.userName !== "") {
+                    switch (this.objective) {
+                        case "None":
+                            break;
+                        case "Visit all cells":
+                            const percent = Math.round(100 * (this.objectiveData.numVisited() - 1) / (this.objectiveData.numCells - 1));
+                            if (this.objectiveData.numVisited() < 2) this.objectiveData.startTime = Date.now();
+                            if (percent < 100) this.objectiveData.finishTime = Date.now();
+                            time = Math.round((this.objectiveData.finishTime - this.objectiveData.startTime) / 1000);
+                            this.heading.text += "\n" + this.objective + " : " + percent + "% (" + time + " s)";
+                            break;
+                        case "Tag":
+                            time = Math.round((Date.now() - this.objectiveData.startTime) / 1000);
+                            if (time < 5) { //Lead-in
+                            }
+                            else if (this.state !== "TagIt") { //Start-up see if we can become It
+                                let otherIt = false;
+                                this.players.forEach(player => {
+                                    if (player.state === "TagIt") {
+                                        otherIt = true;
+                                    }
+                                    else {
+                                        //console.log(player.name, player.state);
+                                    }
+                                });
+                                if (!otherIt) {
+                                    this.setState(globalThis.userName, "TagIt")
+                                    console.log("Initial TagIt");
+                                };
+                            }
+                            // User with state "TagIt" is in charge
+                            const x = Math.round(this.camera.position.x);
+                            const z = Math.round(this.camera.position.z);
+                            if (this.state === "TagIt" && (x !== 0 || z !== 0)) {
+                                //Now check if we have tagged something
+                                this.players.every(player => {
+                                    const playerx = Math.round(player.mesh.position.x);
+                                    const playerz = Math.round(player.mesh.position.z);
+                                    if (x === playerx && z === playerz) {
+                                        this.camera.position.x = 0;
+                                        this.camera.position.z = 0;
+                                        this.camera.setTarget(this.camera.position.add(new BABYLON.Vector3(0, 0, 1)));
+                                        console.log("Revert to Tag");
+                                        this.setState(globalThis.userName, "Tag")
+                                        console.log("Other to TagIt");
+                                        this.setState(player.name, "TagIt")
+                                        return false;
+                                    }
+                                    return true;
+                                });
+                            }
+
+                            this.heading.text += "\n" + this.objective + " : " + (this.state === "TagIt" ? "You are it" : "");
+                            break;
+                    }
                 }
+            }
+
+            setState(name, state) {
+                console.log("Set state", name, state);
+                this.externalData["mode"] = 3;
+                this.externalData["name"] = name;
+                this.externalData["state"] = state;
+                fetch('maze3D.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(this.externalData)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                    })
+                    .catch(error => {
+                    });
             }
 
             updateCamera(dt, dist) {
@@ -167,7 +235,6 @@
                     this.externalData["mode"] = 0;
                     this.externalData["name"] = this.name;
                     this.externalData["game"] = this.game;
-                    this.externalData["state"] = this.state;
                     this.externalData["posX"] = this.camera.position.x;
                     this.externalData["posZ"] = this.camera.position.z;
                     this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
@@ -196,6 +263,7 @@
                                 this.externalData["Animate"] = data.animate;
                                 this.externalData["Rotate"] = data.rotate;
                                 this.externalData["Forward"] = data.forward;
+                                this.externalData["State"] = data.state;
                                 globalThis.readyToSend = true;
                             }
                         })
@@ -210,6 +278,11 @@
                                 globalThis.readyToSend = true;
                             }
                         });
+                }
+
+                if (this.externalData["State"] !== undefined && this.state !== this.externalData["State"]) {
+                    this.objectiveData.startTime = Date.now();
+                    this.state = this.externalData["State"];
                 }
 
                 if (globalThis.cameraAnimate <= 0) {
@@ -302,7 +375,6 @@
 
                         this.externalData["mode"] = 1;
                         this.externalData["name"] = this.name;
-                        this.externalData["game"] = this.game;
                         fetch('maze3D.php', {
                             method: 'POST',
                             headers: {
@@ -454,7 +526,6 @@
             updatePlayers() {
                 this.externalData["mode"] = 2;
                 this.externalData["name"] = this.name;
-                this.externalData["game"] = this.game;
                 globalThis.name = "";
                 fetch('maze3D.php', {
                     method: 'POST',
@@ -472,7 +543,6 @@
                     });
 
                 const source = new EventSource('maze3Dsse.php');
-
                 source.addEventListener('message', (e) => {
                     const data = JSON.parse(e.data);
                     data.forEach(element => {
@@ -507,6 +577,7 @@
                             player.mesh.rotation.y = element.angle * Math.PI / 180 + Math.PI; //+PI since dude is facing backwards
                             player.mesh.position.x = element.posX;
                             player.mesh.position.z = element.posZ;
+                            player.state = element.state;
                         }
                     }
                     else if (player !== undefined) {
@@ -978,6 +1049,7 @@
             name;
             mesh;
             skeleton;
+            state;
             constructor(mesh, skeleton) {
                 this.mesh = mesh;
                 this.skeleton = skeleton;
@@ -987,6 +1059,8 @@
         class ObjectiveData {
             numCells;
             visited;
+            startTime;
+            finishTime;
             constructor(maze) {
                 this.numCells = 0;
                 for (let z = 0; z < maze.length; z++) {
@@ -996,6 +1070,7 @@
                     }
                 }
                 this.visited = {};
+                this.startTime = new Date();
             }
 
             numVisited() {

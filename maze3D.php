@@ -13,7 +13,6 @@ if ($postData !== "") {
     // Decode the JSON data
     $data = json_decode($postData, true);
     $mode = $data['mode'];
-    $game = $data['game'];
     $name = $name . '-' . $data['name'];
 
     if ($mode === 0) // Update user position and return control data
@@ -29,12 +28,11 @@ if ($postData !== "") {
         $dir90 = $data['dir90'];
         $dir180 = $data['dir180'];
         $dir270 = $data['dir270'];
-        $state = $data['state'];
+        $game = $data['game'];
 
         // Process the data
         $dbHandler = new DatabaseHandler("maze3D.db");
         $user = $dbHandler->getUserByName($name);
-        $user->game = $game;
         $user->posX = $posX;
         $user->posZ = $posZ;
         $user->angle = $angle;
@@ -45,7 +43,7 @@ if ($postData !== "") {
         $user->dir90 = $dir90;
         $user->dir180 = $dir180;
         $user->dir270 = $dir270;
-        $user->state = $state;
+        $user->game = $game;
         if ($user->activeTime() > 1) {
             $user->move = 0;
             $user->left = 0;
@@ -64,7 +62,8 @@ if ($postData !== "") {
             'right' => $user->right,
             'animate' => $user->animate,
             'rotate' => $user->rotate,
-            'forward' => $user->forward
+            'forward' => $user->forward,
+            'state' => $user->state,
         );
         echo json_encode($response);
     } elseif ($mode === 1) //Reset movements that have started animation
@@ -76,10 +75,17 @@ if ($postData !== "") {
         $user->forward = 0;
         $dbHandler->updateUser($user);
         echo json_encode("Completed");
-    } elseif ($mode === 2) //Get name
+    } elseif ($mode === 2) //Get full name
     {
         $response = array('name' => $name);
         echo json_encode($response);
+    } elseif ($mode === 3) //Set state
+    {
+        $dbHandler = new DatabaseHandler("maze3D.db");
+        $user = $dbHandler->getUserByName($data['name']);
+        $user->state = $data['state'];
+        $dbHandler->updateUser($user);
+        echo json_encode("Completed");
     }
 
     //if ($logging && $file = fopen('log.txt', 'a')) {
