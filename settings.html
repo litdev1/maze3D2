@@ -66,6 +66,10 @@
                     <td><input class="input1" type="text" id="speed" name="speed" size="10"></td>
                 </tr>
                 <tr>
+                    <td><label>Max frequency</label></td>
+                    <td><input class="input1" type="text" id="maxFPS" name="maxFPS" size="10"></td>
+                </tr>
+                <tr>
                     <td><label>Player name</label></td>
                     <td><input class="input1" type="text" id="name" name="name" size="10"></td>
                 </tr>
@@ -125,6 +129,7 @@
             Default manual (left/right) rotation is 1.5 radians/s (~86 deg/s)<br>
             Default automatic 90 deg rotation (0.5 s)<br>
             <br>
+            The 'Max frequency' is the maximum frequency of message exchange with the server (exchange/s).<br><br>
             The optional 'Player name' identifies a specific user, which can be useful when users are sharing the same
             IP address or there are multiple players in a game. In this case the first web argument sent from Small
             Basic should match this name. (e.g. https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get")<br><br>
@@ -177,6 +182,7 @@
                 document.getElementById('maze').value = maze;
 
                 document.getElementById('speed').value = JSON.parse(localStorage.getItem('speed'));
+                document.getElementById('maxFPS').value = JSON.parse(localStorage.getItem('maxFPS'));
                 document.getElementById('name').value = JSON.parse(localStorage.getItem('name'));
                 document.getElementById('game').value = JSON.parse(localStorage.getItem('game'));
                 document.getElementById('objective').value = JSON.parse(localStorage.getItem('objective'));
@@ -185,6 +191,7 @@
                 document.getElementById('ceiling').value = JSON.parse(localStorage.getItem('ceiling'));
 
                 if (document.getElementById('speed').value == null || document.getElementById('speed').value == "") document.getElementById('speed').value = 1;
+                if (document.getElementById('maxFPS').value == null || document.getElementById('maxFPS').value == "") document.getElementById('maxFPS').value = 60;
                 if (document.getElementById('name').value == null || document.getElementById('name').value == "") document.getElementById('name').value = "";
                 if (document.getElementById('game').value == null || document.getElementById('game').value == "") document.getElementById('game').value = "";
                 if (document.getElementById('objective').value == null || document.getElementById('objective').value == "") document.getElementById('objective').value = "None";
@@ -208,6 +215,7 @@
                 "b X   X   d\n" +
                 "XXXcXXXbXXX";
             document.getElementById('speed').value = 1;
+            document.getElementById('maxFPS').value = 60;
             document.getElementById('name').value = "";
             document.getElementById('game').value = "";
             document.getElementById('objective').value = "None";
@@ -224,6 +232,8 @@
             localStorage.setItem('maze', JSON.stringify(maze));
             speed = document.getElementById('speed').value;
             localStorage.setItem('speed', JSON.stringify(speed));
+            maxFPS = document.getElementById('maxFPS').value;
+            localStorage.setItem('maxFPS', JSON.stringify(maxFPS));
             name = document.getElementById('name').value;
             localStorage.setItem('name', JSON.stringify(name));
             game = document.getElementById('game').value;

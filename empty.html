@@ -97,6 +97,7 @@
             wallImg;
             floorImg;
             ceilingImg;
+            maxFPS;
             state;
             step;
             numAnimate;
@@ -126,6 +127,7 @@
                 this.step = 0;
                 this.state = this.objective;
                 let lastTime = performance.now();
+                let lastPoll = performance.now();
                 globalThis.numAnimate = 0;
                 globalThis.cameraAnimate = 0;
                 globalThis.readyToSend = true;
@@ -140,8 +142,13 @@
 
                     this.updateSprites();
                     let dist = this.updateCollisions(dt);
+                    let doPoll = false;
+                    if ((performance.now() - lastPoll) > 1000 / this.maxFPS) {
+                        lastPoll = performance.now();
+                        doPoll = true;
+                    }
                     if (this.name != "Observer") {
-                        this.updateCamera(dt, dist);
+                        this.updateCamera(dt, dist, doPoll);
                         this.updateObjective();
                     }
                 });
@@ -227,12 +234,12 @@
                     });
             }
 
-            updateCamera(dt, dist) {
+            updateCamera(dt, dist, doPoll) {
                 const x = Math.round(this.camera.position.x);
                 const z = Math.round(this.camera.position.z);
                 this.objectiveData.visited[x + "," + z] = true;
                 //Send to server
-                if (this.step % 100 == 0 || globalThis.readyToSend) {
+                if (doPoll && (this.step % 100 == 0 || globalThis.readyToSend)) {
                     globalThis.readyToSend = false;
                     globalThis.readyToReceive = true;
                     this.externalData["mode"] = 0;
@@ -645,6 +652,13 @@
                 }
                 else {
                     this.speed = 1;
+                }
+                const maxFPS = localStorage.getItem('maxFPS');
+                if (maxFPS) {
+                    this.maxFPS = JSON.parse(maxFPS);
+                }
+                else {
+                    this.maxFPS = 60;
                 }
                 const name = localStorage.getItem('name');
                 if (name) {
