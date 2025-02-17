@@ -1,7 +1,7 @@
 <?php
-//define('MUTEX_KEY', 123456);
-//sem_get(MUTEX_KEY, 1, 0666, 1);
-//sem_acquire(($resource = sem_get(MUTEX_KEY)));
+define('MUTEX_KEY', 123456);
+sem_get(MUTEX_KEY, 1, 0666, 1);
+sem_acquire(($resource = sem_get(MUTEX_KEY)));
 
 $ip = $_SERVER['REMOTE_ADDR'];
 $name = $ip;
@@ -190,7 +190,7 @@ if (count($keys) > 0) {
         }
     }
 }
-//sem_release($resource);
+sem_release($resource);
 
 class User
 {
