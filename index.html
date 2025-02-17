@@ -325,7 +325,9 @@
                     }
                     if (this.externalData["Rotate"] != undefined && this.externalData["Rotate"] != 0) {
                         const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
-                        const frames = Math.max(1, Math.round(30 * Math.abs(this.externalData["Rotate"]) / 90));
+                        let angle = Math.abs(this.externalData["Rotate"]);
+                        if (angle > 180) angle = 360 - angle;
+                        const frames = Math.max(1, Math.round(30 * angle / 90));
                         maxFrames = Math.max(maxFrames, frames);
                         animRotate.setKeys([
                             { frame: 0, value: this.camera.rotation.y },
