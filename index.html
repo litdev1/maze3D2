@@ -94,6 +94,9 @@
             game;
             objective;
             objectiveData;
+            wallImg;
+            floorImg;
+            ceilingImg;
             state;
             step;
             numAnimate;
@@ -662,6 +665,27 @@
                 else {
                     this.objective = "None";
                 }
+                const wall = localStorage.getItem('wall');
+                if (wall) {
+                    this.wallImg = JSON.parse(wall);
+                }
+                else {
+                    this.wallImg = "https://litdev.uk/game_images/uploads/wall.jpg";
+                }
+                const floor = localStorage.getItem('floor');
+                if (floor) {
+                    this.floorImg = JSON.parse(floor);
+                }
+                else {
+                    this.floorImg = "https://litdev.uk/game_images/uploads/stones.jpg";
+                }
+                const ceiling = localStorage.getItem('ceiling');
+                if (ceiling) {
+                    this.ceilingImg = JSON.parse(ceiling);
+                }
+                else {
+                    this.ceilingImg = "https://litdev.uk/game_images/uploads/water.jpg";
+                }
             }
 
             setup() {
@@ -882,12 +906,12 @@
 
             loadMaterials(materials) {
                 let i = 0;
-                materials[i] = new BABYLON.StandardMaterial("wall", this.scene);
-                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/wall.jpg", this.scene);
-                materials[i] = new BABYLON.StandardMaterial("stones", this.scene);
-                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/stones.jpg", this.scene);
-                materials[i] = new BABYLON.StandardMaterial("water", this.scene);
-                materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/water.jpg", this.scene);
+                materials[i] = new BABYLON.StandardMaterial(this.wallImg, this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture(this.wallImg, this.scene);
+                materials[i] = new BABYLON.StandardMaterial(this.floorImg, this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture(this.floorImg, this.scene);
+                materials[i] = new BABYLON.StandardMaterial(this.ceilingImg, this.scene);
+                materials[i++].diffuseTexture = new BABYLON.Texture(this.ceilingImg, this.scene);
 
                 materials[i] = new BABYLON.StandardMaterial("bug", this.scene);
                 materials[i++].diffuseTexture = new BABYLON.Texture("https://litdev.uk/game_images/uploads/bug.png", this.scene);

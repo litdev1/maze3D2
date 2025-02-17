@@ -9,17 +9,21 @@
             background-color: #faffff;
         }
 
-        .inpt {
+        .input1 {
             padding: 4px 4px;
             border: 1px solid black;
             border-radius: 4px;
             background-color: #ffffff;
         }
 
-        .combo {
+        .input2 {
             padding: 4px 4px;
             border: 1px solid black;
             border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            direction: rtl;
             background-color: #ffffff;
         }
 
@@ -53,22 +57,43 @@
     <div class="row">
         <div class="column">
             <label><strong>Maze topology</strong></label><br><br>
-            <textarea class="inpt" id="maze" name="maze" rows="30" cols="30"></textarea><br>
+            <textarea class="input1" id="maze" name="maze" rows="30" cols="30"></textarea><br>
             <br>
             <label><strong>Settings</strong></label><br><br>
-            <label>Speed multiplier</label>
-            <input class="inpt" type="text" id="speed" name="speed" size="4"><br>
+            <table border="0">
+                <tr>
+                    <td><label>Speed multiplier</label></td>
+                    <td><input class="input1" type="text" id="speed" name="speed" size="10"></td>
+                </tr>
+                <tr>
+                    <td><label>Player name</label></td>
+                    <td><input class="input1" type="text" id="name" name="name" size="10"></td>
+                </tr>
+                <tr>
+                    <td><label>Game name</label></td>
+                    <td><input class="input1" type="text" id="game" name="game" size="10"></td>
+                </tr>
+            </table>
             <br>
-            <label>Player name</label>
-            <input class="inpt" type="text" id="name" name="name" size="10"><br>
-            <br>
-            <label>Game name</label>
-            <input class="inpt" type="text" id="game" name="game" size="10"><br>
+            <table border="0">
+                <tr>
+                    <td><label>Wall</label></td>
+                    <td><input class="input2" type="text" id="wall" name="wall" size="20"></td>
+                </tr>
+                <tr>
+                    <td><label>Floor</label></td>
+                    <td><input class="input2" type="text" id="floor" name="floor" size="20"></td>
+                </tr>
+                <tr>
+                    <td><label>Ceiling</label></td>
+                    <td><input class="input2" type="text" id="ceiling" name="ceiling" size="20"></td>
+                </tr>
+            </table>
             <br>
             <button class="btn" onclick="Maze3DDefaults()">Reset to defaults</button><br>
             <button class="btn" onclick="Maze3DSettings()">Apply settings</button><br>
             <br>
-            <label>Choose a game objective</label><br>
+            <label>Game objective</label><br>
             <select class="btn" id="objective" name="objective">
                 <option value="None">None</option>
                 <option value="Visit all cells">Visit all cells</option>
@@ -108,6 +133,7 @@
             The optional 'Game name' identifies a maze world in which only robot players using the same game will be
             shown.<br><br>
             Player and game names are case sensitive and the maze should be reloaded after applying changes.<br><br>
+            Images for walls, floor and ceiling can also be set.<br><br>
             <label><strong>Commands</strong></label><br>
             <br>
             Control commands are sent directly to the webservice at https://litdev.uk/apps/maze3D/maze3D.php?.
@@ -127,9 +153,11 @@
             Support, discussion and examples at <a href="https://litdev.uk/mybb/showthread.php?tid=223">Small Basic
                 forum</a>.<br><br>
             <label><strong>Game objectives</strong></label><br><br>
-            Optionally select a game objective.  This will not affect anything other than reporting of the game objective progress.<br>
+            Optionally select a game objective. This will not affect anything other than reporting of the game objective
+            progress.<br>
             <br>
-            Visit all cells: Timer starts when you exit the first cell and stops when you enter the final cell in the maze.<br>
+            Visit all cells: Timer starts when you exit the first cell and stops when you enter the final cell in the
+            maze.<br>
             <br>
             Tag: If you are 'it' then you have to tag another player by entering their cell for them to become 'it'.<br>
         </div>
@@ -152,11 +180,17 @@
                 document.getElementById('name').value = JSON.parse(localStorage.getItem('name'));
                 document.getElementById('game').value = JSON.parse(localStorage.getItem('game'));
                 document.getElementById('objective').value = JSON.parse(localStorage.getItem('objective'));
+                document.getElementById('wall').value = JSON.parse(localStorage.getItem('wall'));
+                document.getElementById('floor').value = JSON.parse(localStorage.getItem('floor'));
+                document.getElementById('ceiling').value = JSON.parse(localStorage.getItem('ceiling'));
 
-                if (document.getElementById('speed').value == null) document.getElementById('speed').value = 1;
-                if (document.getElementById('name').value == null) document.getElementById('name').value = "";
-                if (document.getElementById('game').value == null) document.getElementById('game').value = "";
+                if (document.getElementById('speed').value == null || document.getElementById('speed').value == "") document.getElementById('speed').value = 1;
+                if (document.getElementById('name').value == null || document.getElementById('name').value == "") document.getElementById('name').value = "";
+                if (document.getElementById('game').value == null || document.getElementById('game').value == "") document.getElementById('game').value = "";
                 if (document.getElementById('objective').value == null || document.getElementById('objective').value == "") document.getElementById('objective').value = "None";
+                if (document.getElementById('wall').value == null || document.getElementById('wall').value == "") document.getElementById('wall').value = "https://litdev.uk/game_images/uploads/wall.jpg";
+                if (document.getElementById('floor').value == null || document.getElementById('floor').value == "") document.getElementById('floor').value = "https://litdev.uk/game_images/uploads/stones.jpg";
+                if (document.getElementById('ceiling').value == null || document.getElementById('ceiling').value == "") document.getElementById('ceiling').value = "https://litdev.uk/game_images/uploads/water.jpg";
             }
         }
 
@@ -177,6 +211,9 @@
             document.getElementById('name').value = "";
             document.getElementById('game').value = "";
             document.getElementById('objective').value = "None";
+            document.getElementById('wall').value = "https://litdev.uk/game_images/uploads/wall.jpg";
+            document.getElementById('floor').value = "https://litdev.uk/game_images/uploads/stones.jpg";
+            document.getElementById('ceiling').value = "https://litdev.uk/game_images/uploads/water.jpg";
 
             Maze3DSettings();
         }
@@ -193,6 +230,12 @@
             localStorage.setItem('game', JSON.stringify(game));
             objective = document.getElementById('objective').value;
             localStorage.setItem('objective', JSON.stringify(objective));
+            wall = document.getElementById('wall').value;
+            localStorage.setItem('wall', JSON.stringify(wall));
+            floor = document.getElementById('floor').value;
+            localStorage.setItem('floor', JSON.stringify(floor));
+            ceiling = document.getElementById('ceiling').value;
+            localStorage.setItem('ceiling', JSON.stringify(ceiling));
         }
 
         function ReloadMaze() {
