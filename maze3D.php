@@ -338,11 +338,11 @@ class DatabaseHandler
         }
     }
 
-    public function deleteUser($id)
+    public function deleteUser($name)
     {
         try {
             // Delete data
-            $sql = "DELETE FROM users WHERE id = " . $id;
+            $sql = "DELETE FROM users WHERE name = " . $name;
             $this->pdo->exec($sql);
             return true;
         } catch (PDOException $e) {

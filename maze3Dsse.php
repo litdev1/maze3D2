@@ -8,7 +8,9 @@ while (true) {
     // Cap the maximum execution time at 30 seconds to prevent PHP from timing out
     set_time_limit(30);
 
-    echo "data: " . json_encode($dbHandler->getUsers()) . PHP_EOL;
+    $dbHandler->purgeUsers();
+    $users = $dbHandler->getUsers();
+    echo "data: " . json_encode($users) . PHP_EOL;
     echo PHP_EOL;
     ob_flush();
     flush();
@@ -55,6 +57,23 @@ class DatabaseHandler {
             }
         }
         return null;
+    }
+
+    public function purgeUsers()
+    {
+        try {
+            // Delete data
+            $sql = "DELETE FROM users WHERE (lastActive < DATE('now', '-1 days')) AND dist = 0.0";
+            $this->pdo->exec($sql);
+            return true;
+        } catch (PDOException $e) {
+            if ($file = fopen('errors.txt', 'a')) {
+                $info = "purgeUsers " . $e->getMessage() . "\n";
+                fwrite($file, $info);
+                fclose($file);
+            }
+            return false;
+        }
     }
 }
 ?>
