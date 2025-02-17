@@ -17,33 +17,20 @@ if ($postData !== "") {
 
     if ($mode === 0) // Update user position and return control data
     {
-        // Access the data
-        $posX = $data['posX'];
-        $posZ = $data['posZ'];
-        $angle = $data['angle'];
-        $dist = $data['dist'];
-        $cellX = $data['cellX'];
-        $cellZ = $data['cellZ'];
-        $dir0 = $data['dir0'];
-        $dir90 = $data['dir90'];
-        $dir180 = $data['dir180'];
-        $dir270 = $data['dir270'];
-        $game = $data['game'];
-
         // Process the data
         $dbHandler = new DatabaseHandler("maze3D.db");
         $user = $dbHandler->getUserByName($name);
-        $user->posX = $posX;
-        $user->posZ = $posZ;
-        $user->angle = $angle;
-        $user->dist = $dist;
-        $user->cellX = $cellX;
-        $user->cellZ = $cellZ;
-        $user->dir0 = $dir0;
-        $user->dir90 = $dir90;
-        $user->dir180 = $dir180;
-        $user->dir270 = $dir270;
-        $user->game = $game;
+        $user->posX = $data['posX'];
+        $user->posZ = $data['posZ'];
+        $user->angle = $data['angle'];
+        $user->dist = $data['dist'];
+        $user->cellX = $data['cellX'];
+        $user->cellZ = $data['cellZ'];
+        $user->dir0 = $data['dir0'];
+        $user->dir90 = $data['dir90'];
+        $user->dir180 = $data['dir180'];
+        $user->dir270 = $data['dir270'];
+        $user->game = $data['game'];
         if ($user->activeTime() > 1) {
             $user->move = 0;
             $user->left = 0;
