@@ -143,8 +143,8 @@
                     this.updateSprites();
                     let dist = this.updateCollisions(dt);
                     let doPoll = false;
-                    if ((performance.now() - lastPoll) > 1000 / this.maxFPS) {
-                        lastPoll = performance.now();
+                    if ((lastTime - lastPoll) > 1000 / this.maxFPS) {
+                        lastPoll = lastTime;
                         doPoll = true;
                     }
                     if (this.name != "Observer") {

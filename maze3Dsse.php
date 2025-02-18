@@ -3,12 +3,12 @@ header('Content-Type: text/event-stream');
 header('Cache-Control: no-cache');
 
 $dbHandler = new DatabaseHandler("maze3D.db");
+$dbHandler->purgeUsers();
 
 while (true) {
     // Cap the maximum execution time at 30 seconds to prevent PHP from timing out
     set_time_limit(30);
 
-    $dbHandler->purgeUsers();
     $users = $dbHandler->getUsers();
     echo "data: " . json_encode($users) . PHP_EOL;
     echo PHP_EOL;
