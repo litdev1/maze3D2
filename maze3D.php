@@ -31,6 +31,7 @@ if ($postData !== "") {
         $user->dir180 = $data['dir180'];
         $user->dir270 = $data['dir270'];
         $user->game = $data['game'];
+        $user->distLabel = $data['distLabel'];
         if ($user->activeTime() > 1) {
             $user->move = 0;
             $user->left = 0;
@@ -123,6 +124,7 @@ if (count($keys) > 0) {
                         'forward' => $user->forward,
                         'game' => $user->game,
                         'state' => $user->state,
+                        'distLabel' => $user->distLabel,
                     );
                     echo json_encode($response);
                 } else {
@@ -215,6 +217,7 @@ class User
     public $forward = 0;
     public $game = "";
     public $state = "";
+    public $distLabel = "";
 
 
     public function __construct($name, $id = null, $lastActive = null)
@@ -270,7 +273,8 @@ class DatabaseHandler
                     rotate REAL NOT NULL DEFAULT 0,
                     forward REAL NOT NULL DEFAULT 0,
                     game TEXT NOT NULL DEFAULT '',
-                    state TEXT NOT NULL DEFAULT '')";
+                    state TEXT NOT NULL DEFAULT '',
+                    distLabel TEXT NOT NULL DEFAULT '')";
             $this->pdo->exec($sql);
         } catch (PDOException $e) {
             if ($file = fopen('errors.txt', 'a')) {
@@ -304,7 +308,7 @@ class DatabaseHandler
             // Replace data
             $sql = "REPLACE INTO users (id, name, lastActive, posX, posZ, angle, dist, move, left, right, 
             cellX, cellZ, dir0, dir90, dir180, dir270, animate,
-            rotate, forward, game, state) VALUES (
+            rotate, forward, game, state, distLabel) VALUES (
                     " . $user->id . ",
                     '" . $user->name . "',
                     CURRENT_TIMESTAMP,
@@ -325,7 +329,8 @@ class DatabaseHandler
                     " . $user->rotate . ",
                     " . $user->forward . ",
                     '" . $user->game . "',
-                    '" . $user->state . "')";
+                    '" . $user->state . "',
+                    '" . $user->distLabel . "')";
             $this->pdo->exec($sql);
             return true;
         } catch (PDOException $e) {
@@ -383,6 +388,7 @@ class DatabaseHandler
                 $user->forward = $row['forward'];
                 $user->game = $row['game'];
                 $user->state = $row['state'];
+                $user->distLabel = $row['distLabel'];
                 array_push($users, $user);
             }
             return $users;
@@ -423,6 +429,7 @@ class DatabaseHandler
                 $user->forward = $row['forward'];
                 $user->game = $row['game'];
                 $user->state = $row['state'];
+                $user->distLabel = $row['distLabel'];
                 return $user;
             }
         } catch (PDOException $e) {

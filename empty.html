@@ -141,14 +141,14 @@
                     this.info.text = "";
 
                     this.updateSprites();
-                    let dist = this.updateCollisions(dt);
+                    let distInfo = this.updateCollisions(dt);
                     let doPoll = false;
                     if ((lastTime - lastPoll) > 1000 / this.maxFPS) {
                         lastPoll = lastTime;
                         doPoll = true;
                     }
                     if (this.name != "Observer") {
-                        this.updateCamera(dt, dist, doPoll);
+                        this.updateCamera(dt, distInfo, doPoll);
                         this.updateObjective();
                     }
                 });
@@ -234,7 +234,7 @@
                     });
             }
 
-            updateCamera(dt, dist, doPoll) {
+            updateCamera(dt, distInfo, doPoll) {
                 const x = Math.round(this.camera.position.x);
                 const z = Math.round(this.camera.position.z);
                 this.objectiveData.visited[x + "," + z] = true;
@@ -249,7 +249,8 @@
                     this.externalData["posZ"] = this.camera.position.z;
                     this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
                     if (this.externalData["angle"] < 0) this.externalData["angle"] += 360;
-                    this.externalData["dist"] = dist;
+                    this.externalData["dist"] = distInfo["dist"];
+                    this.externalData["distLabel"] = distInfo["label"];
                     this.externalData["cellX"] = x;
                     this.externalData["cellZ"] = z;
                     this.externalData["dir270"] = (x > 0 && this.maze[z].charAt(x - 1) != ' ') ? 1 : 0;
@@ -294,6 +295,9 @@
                     this.objectiveData.startTime = Date.now();
                     this.state = this.externalData["State"];
                 }
+
+                //If not a wall then max distance is one cell
+                const dist = distInfo["label"].startsWith("wall") ? distInfo["dist"] : Math.max(1, distInfo["dist"]);
 
                 if (globalThis.cameraAnimate <= 0) {
                     globalThis.cameraAnimate = 0;
@@ -428,7 +432,7 @@
                 move += 1.5 * this.speed * Math.pow(Math.min(this.pressedKeys["Up"], accTime) / accTime, 2) * acc * dt;
                 yaw -= 1.5 * this.speed * Math.pow(Math.min(this.pressedKeys["Left"], accTime) / accTime, 2) * acc * dt;
                 yaw += 1.5 * this.speed * Math.pow(Math.min(this.pressedKeys["Right"], accTime) / accTime, 2) * acc * dt;
-                //info.text += "\n\n" + pitch + " : " + yaw + " : " + roll + " : " + move + " : " + dist;
+                //info.text += "\n\n" + pitch + " : " + yaw + " : " + roll + " : " + move + " : " + distInfo["dist"] + " : " + distInfo["label"];
                 let position = this.camera.position;
                 let lookDirection = this.camera.getTarget().subtract(position).normalize();
                 const quaterion = BABYLON.Quaternion.FromEulerAngles(pitch, yaw, roll);
@@ -451,13 +455,15 @@
 
             updateCollisions(dt) {
                 const pickResult = this.scene.pick(canvas.width / 2, canvas.height / 2); //Canvas center maybe not a good choice for proximity
-                let dist = 1000;
+                let dist = -1;
+                let distLabel = "";
                 let infoDist = "";
                 if (pickResult.hit) {
-                    if (pickResult.pickedMesh.name.startsWith("wall")) {
-                        dist = pickResult.distance;
-                    }
-                    infoDist = pickResult.distance.toFixed(2) + " m (" + pickResult.pickedMesh.name + ")";
+                    dist = pickResult.distance;
+                    let mesh = pickResult.pickedMesh;
+                    while (mesh.parent !== null) mesh = mesh.parent;
+                    distLabel = mesh.name;
+                    infoDist = pickResult.distance.toFixed(2) + " m (" + distLabel + ")";
                     //const lookDirection = pickResult.pickedPoint.subtract(camera.position);
                     //const wallDirection = pickResult.pickedMesh.getFacetNormal(0);
                     //dist = Math.abs(wallDirection.dot(lookDirection));
@@ -469,7 +475,11 @@
                 if (angle < 0) angle += 360;
                 this.info.text += "\nDirection " + angle + " °";
                 this.info.text += "\nDistance " + infoDist;
-                return dist;
+
+                const distInfo = {};
+                distInfo["dist"] = dist;
+                distInfo["label"] = distLabel;
+                return distInfo;
             }
 
             updateSprites() {
@@ -549,6 +559,7 @@
                     .then(response => response.json())
                     .then(data => {
                         globalThis.userName = data.name;
+                        this.setState(globalThis.userName, this.state);
                     })
                     .catch(error => {
                         globalThis.userName = "";
@@ -1010,7 +1021,7 @@
                 BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.Yeti.rootUrl, Assets.meshes.Yeti.filename, this.scene).then((result) => {
                     const enemy = result.meshes[0];
                     enemy.checkCollisions = true;
-                    enemy.name = "enemy" + this.enemies.length.toString();
+                    enemy.name = "Yeti " + (1 + this.enemies.length).toString();
                     enemy.rotationQuaternion = null;
                     const scale = 0.75 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Yeti
                     //const scale = 1 / (2 * result.geometries[0].meshes[0].getBoundingInfo().boundingBox.extendSize.y); //For Alien
@@ -1030,7 +1041,7 @@
                     const text = new BABYLON.GUI.TextBlock();
                     text.color = "orange";
                     text.fontSize = 50;
-                    text.text = "Yeti " + (1 + this.enemies.length).toString();
+                    text.text = enemy.name;
                     advancedTexture.addControl(text);
 
                     this.enemies.push(new Enemy(enemy));
@@ -1045,7 +1056,7 @@
 
                     const player = result.meshes[0];
                     player.checkCollisions = true;
-                    player.name = "player" + this.players.length.toString();
+                    player.name = name;
                     player.rotationQuaternion = null;
                     const scale = 0.14 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
                     player.scaling = new BABYLON.Vector3(scale, scale, scale);
