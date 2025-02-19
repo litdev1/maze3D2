@@ -107,6 +107,8 @@ class Main {
         this.heading.text = this.name + (this.game === "" ? "" : " (" + this.game + ")");
         let time;
         if (globalThis.userName != undefined && globalThis.userName !== "") {
+            const x = Math.round(this.camera.position.x);
+            const z = Math.round(this.camera.position.z);
             switch (this.objective) {
                 case "None":
                     break;
@@ -115,6 +117,7 @@ class Main {
                     if (this.objectiveData.numVisited() < 2) this.objectiveData.startTime = Date.now();
                     if (percent < 100) this.objectiveData.finishTime = Date.now();
                     time = Math.round((this.objectiveData.finishTime - this.objectiveData.startTime) / 1000);
+
                     this.heading.text += "\n" + this.objective + " : " + percent + "% (" + time + " s)";
                     break;
                 case "Tag":
@@ -137,8 +140,6 @@ class Main {
                         };
                     }
                     // User with state "TagIt" is in charge
-                    const x = Math.round(this.camera.position.x);
-                    const z = Math.round(this.camera.position.z);
                     if (this.state === "TagIt" && (x !== 0 || z !== 0)) {
                         //Now check if we have tagged something
                         this.players.every(player => {
@@ -159,6 +160,30 @@ class Main {
                     }
 
                     this.heading.text += "\n" + this.objective + " : " + (this.state === "TagIt" ? "You are IT" : "");
+                    break;
+                case "Hunt Yetis":
+                    if (this.enemies.length > 0) {
+                        //Now check if we have got a Yeti
+                        this.enemies.every(enemy => {
+                            const enemyx = Math.round(enemy.mesh.position.x);
+                            const enemyz = Math.round(enemy.mesh.position.z);
+                            if (x === enemyx && z === enemyz) {
+                                enemy.toDelete = true;
+                            }
+                            return true;
+                        });
+
+                        this.objectiveData.finishTime = Date.now();
+                    }
+
+                    this.heading.text += "\n" + this.objective;
+                    if (this.objectiveData.finishTime === undefined) {
+                        this.objectiveData.startTime = Date.now();
+                    }
+                    else {
+                        time = Math.round((this.objectiveData.finishTime - this.objectiveData.startTime) / 1000);
+                        this.heading.text += " : " + this.enemies.length + " Yeti remaining (" + time + " s)";
+                    }
                     break;
             }
         }
@@ -433,8 +458,17 @@ class Main {
 
     updateSprites() {
         if (globalThis.numAnimate == 0) {
-            for (let i = 0; i < this.enemies.length; i++) {
-                const enemy = this.enemies[i];
+            this.enemies.forEach(enemy => {
+                if (enemy.toDelete) {
+                    let index = this.enemies.indexOf(enemy);
+                    if (index !== -1) {
+                        this.enemies.splice(index, 1);
+                    }
+                    enemy.mesh.dispose();
+                }
+            });
+
+            this.enemies.forEach(enemy => {
                 enemy.mesh.animations = [];
 
                 const x = Math.floor(enemy.mesh.position.x);
@@ -490,7 +524,7 @@ class Main {
 
                 this.scene.beginAnimation(enemy.mesh, 0, 60, false);
                 globalThis.numAnimate++;
-            }
+            });
         }
     }
 
@@ -1047,6 +1081,7 @@ class Enemy {
     mesh;
     direction = 0;
     angle = 0;
+    toDelete = false;
     constructor(mesh) {
         this.mesh = mesh;
     }

@@ -1,7 +1,7 @@
 <?php
 define('MUTEX_KEY', 123456);
-sem_get(MUTEX_KEY, 1, 0666, 1);
-sem_acquire(($resource = sem_get(MUTEX_KEY)));
+$resource = sem_get(MUTEX_KEY, 1, 0666, 1);
+sem_acquire($resource);
 
 $ip = $_SERVER['REMOTE_ADDR'];
 $name = $ip;
