@@ -7,7 +7,7 @@ $ip = $_SERVER['REMOTE_ADDR'];
 $name = $ip;
 $logging = false;
 
-// Process message from maze3D.html
+// Process message from maze3D.js
 $postData = file_get_contents("php://input");
 if ($postData !== "") {
     // Decode the JSON data
@@ -229,7 +229,8 @@ class User
 
     public function activeTime()
     {
-        $now = new DateTime('now');
+        $utc = new DateTimeZone('UTC');
+        $now = new DateTime('now', $utc);
         $then = new DateTime($this->lastActive);
         $interval = $now->diff($then);
         $totalSeconds = ($interval->days * 24 * 60 * 60) +

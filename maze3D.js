@@ -568,7 +568,7 @@ class Main {
     }
 
     updatePlayer(element) {
-        const now = new Date();
+        const now = new Date(new Date().toUTCString());
         const then = new Date(element.lastActive);
         const inactiveTime = (now - then) / 1000;
         //console.log(globalThis.userName, "Player " + element.name + " inactive for " + inactiveTime + "s");
