@@ -580,7 +580,7 @@ class Main {
                     console.log(globalThis.userName, "Player created " + element.name);
                 }
                 else {
-                    player.mesh.rotation.y = element.angle * Math.PI / 180 + Math.PI; //+PI since dude is facing backwards
+                    player.mesh.rotation.y = element.angle * Math.PI / 180;// + Math.PI; //+PI since dude is facing backwards
                     player.mesh.position.x = element.posX;
                     player.mesh.position.z = element.posZ;
                     player.state = element.state;
@@ -1039,7 +1039,8 @@ class Main {
     }
 
     createPlayer(x, z, name) {
-        BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.dude.rootUrl, Assets.meshes.dude.filename, this.scene).then((result) => {
+        //BABYLON.SceneLoader.ImportMeshAsync("", Assets.meshes.dude.rootUrl, Assets.meshes.dude.filename, this.scene).then((result) => {
+        BABYLON.SceneLoader.ImportMeshAsync("", "scenes/BrainStem/", "BrainStem.gltf", this.scene).then((result) => {
             let label = name.slice(name.indexOf('-') + 1);
             if (label.length === 0) label = "Unknown";
             if (label == "Observer") return;
@@ -1048,7 +1049,8 @@ class Main {
             player.checkCollisions = true;
             player.name = name;
             player.rotationQuaternion = null;
-            const scale = 0.14 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
+            //const scale = 0.14 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
+            const scale = 0.055 / (2 * result.meshes[1].getBoundingInfo().boundingBox.extendSize.y);
             player.scaling = new BABYLON.Vector3(scale, scale, scale);
             player.position.x = x;
             player.position.y = 0;
