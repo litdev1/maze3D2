@@ -209,11 +209,13 @@ class Main {
     }
 
     updateCamera(dt, distInfo, doPoll) {
+        const debug = false;
         const x = Math.round(this.camera.position.x);
         const z = Math.round(this.camera.position.z);
         this.objectiveData.visited[x + "," + z] = true;
         //Send to server
-        if (doPoll && (this.step % 100 == 0 || globalThis.readyToSend)) {
+        if (debug) console.log("readyToSend", globalThis.readyToSend);
+        if (doPoll && (globalThis.readyToSend || globalThis.cameraAnimate <= 0)) {
             globalThis.readyToSend = false;
             globalThis.readyToReceive = true;
             this.externalData["mode"] = 0;
@@ -227,11 +229,20 @@ class Main {
             this.externalData["distLabel"] = distInfo["label"];
             this.externalData["cellX"] = x;
             this.externalData["cellZ"] = z;
-            this.externalData["dir270"] = (x > 0 && this.maze[z].charAt(x - 1) != ' ') ? 1 : 0;
-            this.externalData["dir90"] = (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') ? 1 : 0;
-            this.externalData["dir180"] = (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') ? 1 : 0;
-            this.externalData["dir0"] = (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') ? 1 : 0;
+            this.externalData["dir0"] = 0;
+            this.externalData["dir90"] = 0;
+            this.externalData["dir180"] = 0;
+            this.externalData["dir270"] = 0;
+            if (z >= 0 && z < this.maze.length) {
+                if (x >= 0 && x < this.maze[z].length) {
+                    this.externalData["dir270"] = (x > 0 && this.maze[z].charAt(x - 1) != ' ') ? 1 : 0;
+                    this.externalData["dir90"] = (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') ? 1 : 0;
+                    this.externalData["dir180"] = (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') ? 1 : 0;
+                    this.externalData["dir0"] = (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') ? 1 : 0;
+                }
+            }
             // Sending a POST request using Fetch API
+            if (debug) console.log("message sent", globalThis.cameraAnimate);
             fetch('maze3D.php', {
                 method: 'POST',
                 headers: {
@@ -242,14 +253,17 @@ class Main {
                 .then(response => response.json())
                 .then(data => {
                     if (globalThis.readyToReceive) {
-                        this.externalData["ArrowUp"] = data.move;
-                        this.externalData["ArrowLeft"] = data.left;
-                        this.externalData["ArrowRight"] = data.right;
-                        this.externalData["Animate"] = data.animate;
-                        this.externalData["Rotate"] = data.rotate;
-                        this.externalData["Forward"] = data.forward;
-                        this.externalData["State"] = data.state;
+                        if (globalThis.cameraAnimate <= 0) {
+                            this.externalData["ArrowUp"] = data.move;
+                            this.externalData["ArrowLeft"] = data.left;
+                            this.externalData["ArrowRight"] = data.right;
+                            this.externalData["Animate"] = data.animate;
+                            this.externalData["Rotate"] = data.rotate;
+                            this.externalData["Forward"] = data.forward;
+                            this.externalData["State"] = data.state;
+                        }
                         globalThis.readyToSend = true;
+                        if (debug) console.log("message received", data.rotate, globalThis.cameraAnimate);
                     }
                 })
                 .catch(error => {
@@ -261,6 +275,7 @@ class Main {
                         this.externalData["Rotate"] = 0;
                         this.externalData["Forward"] = 0;
                         globalThis.readyToSend = true;
+                        console.log("message error");
                     }
                 });
         }
@@ -302,11 +317,13 @@ class Main {
                 const animEvent = new BABYLON.AnimationEvent(60,
                     function () {
                         globalThis.cameraAnimate--;
+                        if (debug) console.log("animate complete", globalThis.cameraAnimate);
                     },
                     true
                 );
                 animPosition.addEvent(animEvent);
                 this.camera.animations.push(animPosition);
+                if (debug) console.log("animate start", this.externalData["Animate"], maxFrames);
             }
             if (this.externalData["Rotate"] != undefined && this.externalData["Rotate"] != 0) {
                 const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -322,11 +339,13 @@ class Main {
                 const animEvent = new BABYLON.AnimationEvent(frames,
                     function () {
                         globalThis.cameraAnimate--;
+                        if (debug) console.log("rotate complete", globalThis.cameraAnimate);
                     },
                     true
                 );
                 animRotate.addEvent(animEvent);
                 this.camera.animations.push(animRotate);
+                if (debug) console.log("rotate start", this.externalData["Rotate"], maxFrames);
             }
             if (this.externalData["Forward"] != undefined && this.externalData["Forward"] != 0) {
                 const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -348,15 +367,18 @@ class Main {
                 const animEvent = new BABYLON.AnimationEvent(frames,
                     function () {
                         globalThis.cameraAnimate--;
+                        if (debug) console.log("forward complete", globalThis.cameraAnimate);
                     },
                     true
                 );
                 animPosition.addEvent(animEvent);
                 this.camera.animations.push(animPosition);
+                if (debug) console.log("forward start", this.externalData["Forward"], maxFrames);
             }
 
             if (maxFrames > 0) {
                 globalThis.cameraAnimate++;
+                if (debug) console.log("mode1 set", this.externalData["Rotate"], globalThis.cameraAnimate);
                 globalThis.readyToReceive = false;
                 this.externalData["Animate"] = -1;
                 this.externalData["Rotate"] = 0;
@@ -375,9 +397,11 @@ class Main {
                     .then(response => response.json())
                     .then(data => {
                         globalThis.readyToReceive = true;
+                        if (debug) console.log("mode1 reply", data);
                     })
                     .catch(error => {
                         globalThis.readyToReceive = true;
+                        console.log("mode1 error", error);
                     });
             }
         }
@@ -476,10 +500,14 @@ class Main {
                 const z = Math.floor(enemy.mesh.position.z);
 
                 let dirs = [];
-                if (x > 0 && this.maze[z].charAt(x - 1) != ' ') dirs.push(0);
-                if (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') dirs.push(1);
-                if (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') dirs.push(2);
-                if (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') dirs.push(3);
+                if (z >= 0 && z < this.maze.length) {
+                    if (x >= 0 && x < this.maze[z].length) {
+                        if (x > 0 && this.maze[z].charAt(x - 1) != ' ') dirs.push(0);
+                        if (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') dirs.push(1);
+                        if (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') dirs.push(2);
+                        if (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') dirs.push(3);
+                    }
+                }
 
                 if (dirs.indexOf(enemy.direction) !== -1 && Math.random() > 0.2) {
                     //Moving forward is an option
