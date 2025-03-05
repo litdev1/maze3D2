@@ -133,7 +133,8 @@
             The 'Max frequency' is the maximum frequency of message exchange with the server (exchange/s).<br><br>
             The optional 'Player name' identifies a specific user, which can be useful when users are sharing the same
             IP address or there are multiple players in a game. In this case the first web argument sent from Small
-            Basic should match this name. (e.g. https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get")<br><br>
+            Basic should match this name. (e.g.
+            <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get</i></strong>")<br><br>
             There is also a special player called 'Observer' that can fly out of the maze for an overview and takes no
             part in any game.<br><br>
             The optional 'Game name' identifies a maze world in which only robot players using the same game will be
@@ -142,20 +143,39 @@
             Images for walls, floor and ceiling can also be set.<br><br>
             <label><strong>Commands</strong></label><br>
             <br>
-            Control commands are sent directly to the webservice at https://litdev.uk/apps/maze3D/maze3D.php?.
-            This may be from Small Basic using LitDev extension (1.29.150.0+) with command LDNetwork.SendWebRequest.
+            Control commands are sent directly to the webservice at
+            <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?</i></strong>.
+            This may be from Small Basic using LitDev extension (1.29.15.0+) with command LDNetwork.SendWebRequest.
             Commands can also be entered directly into a browser for test purposes, or from any other WebRequest
             service.<br><br>
             Multiple arguments are separated by '&'. The first argument is optionally a user name e.g. 'name=Steve' and
-            the next (or first argument) is an action.<br><br>
-            'action=get' returns various user details (position, neighbour cells etc).<br>
-            'action=getAll' returns basic position data for all users in the current game.<br>
-            'action=set' sends commands to the current user, options are:<br><br>
-            Continuous movement: 'move=1' move forwards, 'left=1' rotate anti-clockwise, 'right=1' rotate clockwise.<br>
-            'move=0', 'left=0', 'right=0' stop movements.<br><br>
-            Animate to adjacent available cell: 'animate=0', 'animate=90', 'animate=180', 'animate=270'.<br><br>
-            Move a controlled amount: 'rotate=A', 'forward=B' where A is a clockwise angle and B is a distance (cells
-            are 1x1).<br><br>
+            the next (or first argument) is an action.<br>
+            <ul>
+                <li>'action=get' returns various user details (position, neighbour cells etc)</li>
+                <li>'action=getAll' returns basic position data for all users in the current game</li>
+                <li>'action=set' sends commands to the current user, options listed below:</li>
+            </ul>
+            Continuous movement:
+            <ul>
+                <li>'move=1' move forwards, 'move=0' to stop</li>
+                <li>'left=1' rotate anti-clockwise, 'left=0' to stop</li>
+                <li>'right=1' rotate clockwise, 'right=0' to stop</li>
+            </ul>
+            Animate to adjacent available cell:
+            <ul>
+                <li>'animate=0', +Z direction, initially forwards</li>
+                <li>'animate=90', +X direction, initially right</li>
+                <li>'animate=180', -Z direction, initially backwards</li>
+                <li>'animate=270', -X direction, initially left</li>
+            </ul>
+            Animate a controlled amount:
+            <ul>
+                <li>'rotate=A', where A is a clockwise angle</li>
+                <li>'forward=B', where B is a distance (cells are 1x1)</li>
+            </ul>
+            The command <strong><i>https://litdev.uk/apps/maze3D/maze3Dasync.php?name=&action=isReady</i></strong>
+            will wait until all animations are completed before replying, 
+            indicating that the current position is set and available for the next command.<br><br>
             Support, discussion and examples at <a href="https://litdev.uk/mybb/showthread.php?tid=223">Small Basic
                 forum</a>.<br><br>
             <label><strong>Game objectives</strong></label><br><br>
