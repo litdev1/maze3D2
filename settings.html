@@ -115,29 +115,35 @@
             <br>
             Each row of characters represent the maze cells in increasing (initially forwards) Z direction.<br>
             The text characters within each row represent the maze cells in the X (initially right) direction.<br>
-            <br>
-            X is an active cell<br>
-            An empty space is a walled cell<br>
-            Y is an active cell initially with a Yeti<br>
-            L is an active cell with a light<br>
-            a is an active cell with wall art (bug)<br>
-            b is an active cell with wall art (smiley)<br>
-            c is an active cell with wall art (tree)<br>
-            d is an active cell with wall art (coffee)<br>
-            <br>
-            Default Yeti speed is 1 cell/s<br>
-            Default robot speed is 1.5 cell/s<br>
-            Default manual (left/right) rotation is 1.5 radians/s (~86 deg/s)<br>
-            Default automatic 90 deg rotation (0.5 s)<br>
-            <br>
-            The 'Max frequency' is the maximum frequency of message exchange with the server (exchange/s).<br><br>
-            The optional 'Player name' identifies a specific user, which can be useful when users are sharing the same
+            <ul>
+                <li>X is an active cell</li>
+                <li>An empty space is a walled cell that cannot be entered</li>
+                <li>Y is an active cell initially with a Yeti</li>
+                <li>L is an active cell with a light</li>
+                <li>a is an active cell with wall art (bug)</li>
+                <li>b is an active cell with wall art (smiley)</li>
+                <li>c is an active cell with wall art (tree)</li>
+                <li>d is an active cell with wall art (coffee)</li>
+            </ul>
+            The overall speed can be controlled with the <strong><i></i>Speed multiplier</i></strong>.
+            <ul>
+                <li>Default Yeti speed is 1 cell/s</li>
+                <li>Default robot speed is 1.5 cell/s</li>
+                <li>Default manual (left/right) rotation is 1.5 radians/s (~86 deg/s)</li>
+                <li>Default animated 90 deg rotation (0.5 s)</li>
+            </ul>
+            The <strong><i>Max frequency</i></strong> is the maximum frequency of message exchange with the server
+            (exchange/s).<br><br>
+            The optional <strong><i>Player name</i></strong> identifies a specific user, which can be useful when users
+            are sharing the same
             IP address or there are multiple players in a game. In this case the first web argument sent from Small
             Basic should match this name. (e.g.
             <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?name=Steve&action=get</i></strong>")<br><br>
-            There is also a special player called 'Observer' that can fly out of the maze for an overview and takes no
+            There is also a special player called <strong><i>Observer</i></strong> that can fly out of the maze for an
+            overview and takes no
             part in any game.<br><br>
-            The optional 'Game name' identifies a maze world in which only robot players using the same game will be
+            The optional <strong><i>Game name</i></strong> identifies a maze world in which only robot players using the
+            same game will be
             shown.<br><br>
             Player and game names are case sensitive and the maze should be reloaded after applying changes.<br><br>
             Images for walls, floor and ceiling can also be set.<br><br>
@@ -170,24 +176,23 @@
             </ul>
             Animate a controlled amount:
             <ul>
-                <li>'rotate=A', where A is a clockwise angle</li>
+                <li>'rotate=A', where A is a clockwise angle in degrees relative to the currrent direction</li>
                 <li>'forward=B', where B is a distance (cells are 1x1)</li>
             </ul>
             The command <strong><i>https://litdev.uk/apps/maze3D/maze3Dasync.php?name=&action=isReady</i></strong>
-            will wait until all animations are completed before replying, 
-            indicating that the current position is set and available for the next command.<br><br>
+            will wait until all animations are completed before replying,
+            indicating that the current position is fully updated and ready for the next command.<br><br>
             Support, discussion and examples at <a href="https://litdev.uk/mybb/showthread.php?tid=223">Small Basic
                 forum</a>.<br><br>
             <label><strong>Game objectives</strong></label><br><br>
             Optionally select a game objective. This will not affect anything other than reporting of the game objective
             progress.<br>
-            <br>
-            Visit all cells: Timer starts when you exit the first cell and stops when you enter the final cell in the
-            maze.<br>
-            <br>
-            Tag: If you are 'IT' then you have to tag another player by entering their cell for them to become 'IT'.<br>
-            <br>
-            Hunt Yetis: Track down and enter a Yeti cell to kill it.<br>
+            <ul>
+                <li>Visit all cells: Timer starts when you exit the first cell and stops when you enter the final cell
+                    in the maze.</li>
+                <li>Tag: If you are 'IT' then you have to tag another player by entering their cell for them to become
+                    'IT'.</li>
+                <li>Hunt Yetis: Track down and enter a Yeti cell to kill it.</li>
         </div>
     </div>
 
