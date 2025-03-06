@@ -125,7 +125,7 @@
                 <li>c is an active cell with wall art (tree)</li>
                 <li>d is an active cell with wall art (coffee)</li>
             </ul>
-            The overall speed can be controlled with the <strong><i></i>Speed multiplier</i></strong>.
+            The overall speed can be controlled with the <strong><i>Speed multiplier</i></strong>.
             <ul>
                 <li>Default Yeti speed is 1 cell/s</li>
                 <li>Default robot speed is 1.5 cell/s</li>
@@ -160,12 +160,16 @@
                 <li>'action=get' returns various user details (position, neighbour cells etc)</li>
                 <li>'action=getAll' returns basic position data for all users in the current game</li>
                 <li>'action=set' sends commands to the current user, options listed below:</li>
+                <br>
+                <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?name=Mike&action=get</i></strong>
             </ul>
             Continuous movement:
             <ul>
                 <li>'move=1' move forwards, 'move=0' to stop</li>
                 <li>'left=1' rotate anti-clockwise, 'left=0' to stop</li>
                 <li>'right=1' rotate clockwise, 'right=0' to stop</li>
+                <br>
+                <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?action=set&move=1</i></strong>
             </ul>
             Animate to adjacent available cell:
             <ul>
@@ -173,11 +177,15 @@
                 <li>'animate=90', +X direction, initially right</li>
                 <li>'animate=180', -Z direction, initially backwards</li>
                 <li>'animate=270', -X direction, initially left</li>
+                <br>
+                <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?name=Fred&action=set&animate=180</i></strong>
             </ul>
             Animate a controlled amount:
             <ul>
                 <li>'rotate=A', where A is a clockwise angle in degrees relative to the currrent direction</li>
                 <li>'forward=B', where B is a distance (cells are 1x1)</li>
+                <br>
+                <strong><i>https://litdev.uk/apps/maze3D/maze3D.php?action=set&rotate=-45</i></strong>
             </ul>
             The command <strong><i>https://litdev.uk/apps/maze3D/maze3Dasync.php?name=&action=isReady</i></strong>
             will wait until all animations are completed before replying,
@@ -188,6 +196,7 @@
             Optionally select a game objective. This will not affect anything other than reporting of the game objective
             progress.<br>
             <ul>
+                <li>None: Default with no objective.</li>
                 <li>Visit all cells: Timer starts when you exit the first cell and stops when you enter the final cell
                     in the maze.</li>
                 <li>Tag: If you are 'IT' then you have to tag another player by entering their cell for them to become
@@ -197,6 +206,23 @@
     </div>
 
     <script>
+        const _maze = "XXXc XXXXYXXXXdXXXL\n" +
+                "a  XXXX\n" +
+                "X XXc X XaX\n" +
+                "XbX XYXX XX\n" +
+                "       d XX\n" +
+                "XXcX XLXXXX\n" +
+                " L X X\n" +
+                " X  XXXXXX\n" +
+                "YXXYXXXX LX\n" +
+                "b X   X   d\n" +
+                "XXXcXXXbXXX";
+        const _speed = 1;
+        const _maxFPS = 60;
+        const _objective = "None";
+        const _wall = "https://litdev.uk/game_images/uploads/wall.jpg";
+        const _floor = "https://litdev.uk/game_images/uploads/stones.jpg";
+        const _ceiling = "https://litdev.uk/game_images/uploads/water.jpg";
         Maze3DInitial();
 
         function Maze3DInitial() {
@@ -218,61 +244,50 @@
                 document.getElementById('floor').value = JSON.parse(localStorage.getItem('floor'));
                 document.getElementById('ceiling').value = JSON.parse(localStorage.getItem('ceiling'));
 
-                if (document.getElementById('speed').value == null || document.getElementById('speed').value == "") document.getElementById('speed').value = 1;
-                if (document.getElementById('maxFPS').value == null || document.getElementById('maxFPS').value == "") document.getElementById('maxFPS').value = 60;
+                if (document.getElementById('speed').value == null || document.getElementById('speed').value == "") document.getElementById('speed').value = _speed;
+                if (document.getElementById('maxFPS').value == null || document.getElementById('maxFPS').value == "") document.getElementById('maxFPS').value = _maxFPS;
                 if (document.getElementById('name').value == null || document.getElementById('name').value == "") document.getElementById('name').value = "";
                 if (document.getElementById('game').value == null || document.getElementById('game').value == "") document.getElementById('game').value = "";
-                if (document.getElementById('objective').value == null || document.getElementById('objective').value == "") document.getElementById('objective').value = "None";
-                if (document.getElementById('wall').value == null || document.getElementById('wall').value == "") document.getElementById('wall').value = "https://litdev.uk/game_images/uploads/wall.jpg";
-                if (document.getElementById('floor').value == null || document.getElementById('floor').value == "") document.getElementById('floor').value = "https://litdev.uk/game_images/uploads/stones.jpg";
-                if (document.getElementById('ceiling').value == null || document.getElementById('ceiling').value == "") document.getElementById('ceiling').value = "https://litdev.uk/game_images/uploads/water.jpg";
+                if (document.getElementById('objective').value == null || document.getElementById('objective').value == "") document.getElementById('objective').value = _objective;
+                if (document.getElementById('wall').value == null || document.getElementById('wall').value == "") document.getElementById('wall').value = _wall;
+                if (document.getElementById('floor').value == null || document.getElementById('floor').value == "") document.getElementById('floor').value = _floor;
+                if (document.getElementById('ceiling').value == null || document.getElementById('ceiling').value == "") document.getElementById('ceiling').value = _ceiling;
             }
         }
 
         function Maze3DDefaults() {
-            document.getElementById('maze').value =
-                "XXXc XXXXYXXXXdXXXL\n" +
-                "a  XXXX\n" +
-                "X XXc X XaX\n" +
-                "XbX XYXX XX\n" +
-                "       d XX\n" +
-                "XXcX XLXXXX\n" +
-                " L X X\n" +
-                " X  XXXXXX\n" +
-                "YXXYXXXX LX\n" +
-                "b X   X   d\n" +
-                "XXXcXXXbXXX";
-            document.getElementById('speed').value = 1;
-            document.getElementById('maxFPS').value = 60;
+            document.getElementById('maze').value =_maze;
+            document.getElementById('speed').value = _speed;
+            document.getElementById('maxFPS').value = _maxFPS;
             document.getElementById('name').value = "";
             document.getElementById('game').value = "";
-            document.getElementById('objective').value = "None";
-            document.getElementById('wall').value = "https://litdev.uk/game_images/uploads/wall.jpg";
-            document.getElementById('floor').value = "https://litdev.uk/game_images/uploads/stones.jpg";
-            document.getElementById('ceiling').value = "https://litdev.uk/game_images/uploads/water.jpg";
+            document.getElementById('objective').value = _objective;
+            document.getElementById('wall').value = _wall;
+            document.getElementById('floor').value = _floor;
+            document.getElementById('ceiling').value = _ceiling;
 
             Maze3DSettings();
         }
 
         function Maze3DSettings() {
-            maze = document.getElementById('maze').value.split('\n');
+            let maze = document.getElementById('maze').value.split('\n');
             maze.reverse();
             localStorage.setItem('maze', JSON.stringify(maze));
-            speed = document.getElementById('speed').value;
+            let speed = document.getElementById('speed').value;
             localStorage.setItem('speed', JSON.stringify(speed));
-            maxFPS = document.getElementById('maxFPS').value;
+            let maxFPS = document.getElementById('maxFPS').value;
             localStorage.setItem('maxFPS', JSON.stringify(maxFPS));
-            name = document.getElementById('name').value;
+            let name = document.getElementById('name').value;
             localStorage.setItem('name', JSON.stringify(name));
-            game = document.getElementById('game').value;
+            let game = document.getElementById('game').value;
             localStorage.setItem('game', JSON.stringify(game));
-            objective = document.getElementById('objective').value;
+            let objective = document.getElementById('objective').value;
             localStorage.setItem('objective', JSON.stringify(objective));
-            wall = document.getElementById('wall').value;
+            let wall = document.getElementById('wall').value;
             localStorage.setItem('wall', JSON.stringify(wall));
-            floor = document.getElementById('floor').value;
+            let floor = document.getElementById('floor').value;
             localStorage.setItem('floor', JSON.stringify(floor));
-            ceiling = document.getElementById('ceiling').value;
+            let ceiling = document.getElementById('ceiling').value;
             localStorage.setItem('ceiling', JSON.stringify(ceiling));
         }
 
