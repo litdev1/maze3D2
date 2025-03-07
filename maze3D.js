@@ -214,10 +214,9 @@ class Main {
         const z = Math.round(this.camera.position.z);
         this.objectiveData.visited[x + "," + z] = true;
         //Send to server
-        if (debug) console.log("readyToSend", globalThis.readyToSend);
-        if (doPoll && (globalThis.readyToSend || globalThis.cameraAnimate <= 0)) {
+        if (debug) console.log("readyToSend,readyToReceive", globalThis.readyToSend, globalThis.readyToReceive);
+        if (doPoll && globalThis.readyToSend) {
             globalThis.readyToSend = false;
-            globalThis.readyToReceive = true;
             this.externalData["mode"] = 0;
             this.externalData["name"] = this.name;
             this.externalData["game"] = this.game;
@@ -253,30 +252,26 @@ class Main {
                 .then(response => response.json())
                 .then(data => {
                     if (globalThis.readyToReceive) {
-                        if (globalThis.cameraAnimate <= 0) {
-                            this.externalData["ArrowUp"] = data.move;
-                            this.externalData["ArrowLeft"] = data.left;
-                            this.externalData["ArrowRight"] = data.right;
-                            this.externalData["Animate"] = data.animate;
-                            this.externalData["Rotate"] = data.rotate;
-                            this.externalData["Forward"] = data.forward;
-                            this.externalData["State"] = data.state;
-                        }
-                        globalThis.readyToSend = true;
+                        this.externalData["ArrowUp"] = data.move;
+                        this.externalData["ArrowLeft"] = data.left;
+                        this.externalData["ArrowRight"] = data.right;
+                        this.externalData["Animate"] = data.animate;
+                        this.externalData["Rotate"] = data.rotate;
+                        this.externalData["Forward"] = data.forward;
+                        this.externalData["State"] = data.state;
                         if (debug) console.log("message received", data.rotate, globalThis.cameraAnimate);
                     }
+                    globalThis.readyToSend = true;
                 })
                 .catch(error => {
-                    if (globalThis.readyToReceive) {
-                        this.externalData["ArrowUp"] = 0;
-                        this.externalData["ArrowLeft"] = 0;
-                        this.externalData["ArrowRight"] = 0;
-                        this.externalData["Animate"] = -1;
-                        this.externalData["Rotate"] = 0;
-                        this.externalData["Forward"] = 0;
-                        globalThis.readyToSend = true;
-                        console.log("message error");
-                    }
+                    this.externalData["ArrowUp"] = 0;
+                    this.externalData["ArrowLeft"] = 0;
+                    this.externalData["ArrowRight"] = 0;
+                    this.externalData["Animate"] = -1;
+                    this.externalData["Rotate"] = 0;
+                    this.externalData["Forward"] = 0;
+                    globalThis.readyToSend = true;
+                    console.log("message error");
                 });
         }
 
@@ -288,9 +283,7 @@ class Main {
         //If not a wall then max distance is one cell
         const dist = distInfo["label"].startsWith("wall") ? distInfo["dist"] : Math.max(1, distInfo["dist"]);
 
-        if (globalThis.cameraAnimate <= 0) {
-            globalThis.cameraAnimate = 0;
-
+        if (globalThis.cameraAnimate == 0) {
             this.camera.animations = [];
             var maxFrames = 0;
 
@@ -377,33 +370,35 @@ class Main {
             }
 
             if (maxFrames > 0) {
-                globalThis.cameraAnimate++;
-                if (debug) console.log("mode1 set", this.externalData["Rotate"], globalThis.cameraAnimate);
                 globalThis.readyToReceive = false;
+                globalThis.cameraAnimate++;
                 this.externalData["Animate"] = -1;
                 this.externalData["Rotate"] = 0;
                 this.externalData["Forward"] = 0;
                 this.scene.beginAnimation(this.camera, 0, maxFrames, false);
-
-                this.externalData["mode"] = 1;
-                this.externalData["name"] = this.name;
-                fetch('maze3D.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(this.externalData)
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        globalThis.readyToReceive = true;
-                        if (debug) console.log("mode1 reply", data);
-                    })
-                    .catch(error => {
-                        globalThis.readyToReceive = true;
-                        console.log("mode1 error", error);
-                    });
             }
+        }
+        if (!globalThis.readyToReceive && globalThis.cameraAnimate <= 0) {
+            if (debug) console.log("mode1 set", this.externalData["Rotate"], globalThis.cameraAnimate);
+            globalThis.cameraAnimate = 0;
+            this.externalData["mode"] = 1;
+            this.externalData["name"] = this.name;
+            fetch('maze3D.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.externalData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    globalThis.readyToReceive = true;
+                    if (debug) console.log("mode1 reply", data);
+                })
+                .catch(error => {
+                    globalThis.readyToReceive = true;
+                    console.log("mode1 error", error);
+                });
         }
 
         let yaw = 0;
