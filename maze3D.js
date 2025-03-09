@@ -310,13 +310,13 @@ class Main {
                 const animEvent = new BABYLON.AnimationEvent(60,
                     function () {
                         globalThis.cameraAnimate--;
-                        if (debug) console.log("animate complete", globalThis.cameraAnimate);
+                        console.log("animate complete", globalThis.cameraAnimate);
                     },
                     true
                 );
                 animPosition.addEvent(animEvent);
                 this.camera.animations.push(animPosition);
-                if (debug) console.log("animate start", this.externalData["Animate"], maxFrames);
+                console.log("animate start", this.externalData["Animate"], maxFrames);
             }
             if (this.externalData["Rotate"] != undefined && this.externalData["Rotate"] != 0) {
                 const animRotate = new BABYLON.Animation("rotation", "rotation.y", 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_FLOAT, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -332,13 +332,13 @@ class Main {
                 const animEvent = new BABYLON.AnimationEvent(frames,
                     function () {
                         globalThis.cameraAnimate--;
-                        if (debug) console.log("rotate complete", globalThis.cameraAnimate);
+                        console.log("rotate complete", globalThis.cameraAnimate);
                     },
                     true
                 );
                 animRotate.addEvent(animEvent);
                 this.camera.animations.push(animRotate);
-                if (debug) console.log("rotate start", this.externalData["Rotate"], maxFrames);
+                console.log("rotate start", this.externalData["Rotate"], maxFrames);
             }
             if (this.externalData["Forward"] != undefined && this.externalData["Forward"] != 0) {
                 const animPosition = new BABYLON.Animation("position", "position", 1.5 * 60 * this.speed, BABYLON.Animation.ANIMATIONTYPE_VECTOR3, BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
@@ -360,13 +360,13 @@ class Main {
                 const animEvent = new BABYLON.AnimationEvent(frames,
                     function () {
                         globalThis.cameraAnimate--;
-                        if (debug) console.log("forward complete", globalThis.cameraAnimate);
+                        console.log("forward complete", globalThis.cameraAnimate);
                     },
                     true
                 );
                 animPosition.addEvent(animEvent);
                 this.camera.animations.push(animPosition);
-                if (debug) console.log("forward start", this.externalData["Forward"], maxFrames);
+                console.log("forward start", this.externalData["Forward"], maxFrames);
             }
 
             if (maxFrames > 0) {
@@ -375,12 +375,13 @@ class Main {
                 this.externalData["Animate"] = -1;
                 this.externalData["Rotate"] = 0;
                 this.externalData["Forward"] = 0;
+                console.log("begin animation");
                 this.scene.beginAnimation(this.camera, 0, maxFrames, false);
             }
         }
         if (!globalThis.readyToReceive && globalThis.cameraAnimate <= 0) {
-            if (debug) console.log("mode1 set", this.externalData["Rotate"], globalThis.cameraAnimate);
-            globalThis.cameraAnimate = 0;
+            console.log("mode1 set", this.externalData["Rotate"], globalThis.cameraAnimate);
+            globalThis.cameraAnimate = 1;
             this.externalData["mode"] = 1;
             fetch('maze3D.php', {
                 method: 'POST',
@@ -392,10 +393,12 @@ class Main {
                 .then(response => response.json())
                 .then(data => {
                     globalThis.readyToReceive = true;
-                    if (debug) console.log("mode1 reply", data);
+                    globalThis.cameraAnimate = 0;
+                    console.log("mode1 reply", data);
                 })
                 .catch(error => {
                     globalThis.readyToReceive = true;
+                    globalThis.cameraAnimate = 0;
                     console.log("mode1 error", error);
                 });
         }
