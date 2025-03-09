@@ -58,6 +58,18 @@ if ($postData !== "") {
     {
         $dbHandler = new DatabaseHandler("maze3D.db");
         $user = $dbHandler->getUserByName($name);
+        $user->posX = $data['posX'];
+        $user->posZ = $data['posZ'];
+        $user->angle = $data['angle'];
+        $user->dist = $data['dist'];
+        $user->cellX = $data['cellX'];
+        $user->cellZ = $data['cellZ'];
+        $user->dir0 = $data['dir0'];
+        $user->dir90 = $data['dir90'];
+        $user->dir180 = $data['dir180'];
+        $user->dir270 = $data['dir270'];
+        $user->game = $data['game'];
+        $user->distLabel = $data['distLabel'];
         $user->animate = -1;
         $user->rotate = 0;
         $user->forward = 0;

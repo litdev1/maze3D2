@@ -212,34 +212,34 @@ class Main {
         const debug = false;
         const x = Math.round(this.camera.position.x);
         const z = Math.round(this.camera.position.z);
+        this.externalData["name"] = this.name;
+        this.externalData["game"] = this.game;
+        this.externalData["posX"] = this.camera.position.x;
+        this.externalData["posZ"] = this.camera.position.z;
+        this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
+        if (this.externalData["angle"] < 0) this.externalData["angle"] += 360;
+        this.externalData["dist"] = distInfo["dist"];
+        this.externalData["distLabel"] = distInfo["label"];
+        this.externalData["cellX"] = x;
+        this.externalData["cellZ"] = z;
+        this.externalData["dir0"] = 0;
+        this.externalData["dir90"] = 0;
+        this.externalData["dir180"] = 0;
+        this.externalData["dir270"] = 0;
+        if (z >= 0 && z < this.maze.length) {
+            if (x >= 0 && x < this.maze[z].length) {
+                this.externalData["dir270"] = (x > 0 && this.maze[z].charAt(x - 1) != ' ') ? 1 : 0;
+                this.externalData["dir90"] = (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') ? 1 : 0;
+                this.externalData["dir180"] = (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') ? 1 : 0;
+                this.externalData["dir0"] = (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') ? 1 : 0;
+            }
+        }
         this.objectiveData.visited[x + "," + z] = true;
         //Send to server
         if (debug) console.log("readyToSend,readyToReceive", globalThis.readyToSend, globalThis.readyToReceive);
         if (doPoll && globalThis.readyToSend) {
             globalThis.readyToSend = false;
             this.externalData["mode"] = 0;
-            this.externalData["name"] = this.name;
-            this.externalData["game"] = this.game;
-            this.externalData["posX"] = this.camera.position.x;
-            this.externalData["posZ"] = this.camera.position.z;
-            this.externalData["angle"] = this.camera.rotation.y * 180 / Math.PI;
-            if (this.externalData["angle"] < 0) this.externalData["angle"] += 360;
-            this.externalData["dist"] = distInfo["dist"];
-            this.externalData["distLabel"] = distInfo["label"];
-            this.externalData["cellX"] = x;
-            this.externalData["cellZ"] = z;
-            this.externalData["dir0"] = 0;
-            this.externalData["dir90"] = 0;
-            this.externalData["dir180"] = 0;
-            this.externalData["dir270"] = 0;
-            if (z >= 0 && z < this.maze.length) {
-                if (x >= 0 && x < this.maze[z].length) {
-                    this.externalData["dir270"] = (x > 0 && this.maze[z].charAt(x - 1) != ' ') ? 1 : 0;
-                    this.externalData["dir90"] = (x < this.maze[z].length - 1 && this.maze[z].charAt(x + 1) != ' ') ? 1 : 0;
-                    this.externalData["dir180"] = (z > 0 && x < this.maze[z - 1].length && this.maze[z - 1].charAt(x) != ' ') ? 1 : 0;
-                    this.externalData["dir0"] = (z < this.maze.length - 1 && x < this.maze[z + 1].length && this.maze[z + 1].charAt(x) != ' ') ? 1 : 0;
-                }
-            }
             // Sending a POST request using Fetch API
             if (debug) console.log("message sent", globalThis.cameraAnimate);
             fetch('maze3D.php', {
@@ -382,7 +382,6 @@ class Main {
             if (debug) console.log("mode1 set", this.externalData["Rotate"], globalThis.cameraAnimate);
             globalThis.cameraAnimate = 0;
             this.externalData["mode"] = 1;
-            this.externalData["name"] = this.name;
             fetch('maze3D.php', {
                 method: 'POST',
                 headers: {
