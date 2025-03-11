@@ -39,7 +39,6 @@ class Main {
     enemies;
     players;
     name;
-    userName;
     game;
     objective;
     objectiveData;
@@ -49,6 +48,8 @@ class Main {
     maxFPS;
     state;
     step;
+    
+    userName;
     numAnimate;
     cameraAnimate;
     readyToSend;
@@ -60,6 +61,11 @@ class Main {
         // Setup the sky background, camera, lights, GUI overlay and key controls
         this.settings();
         this.setup();
+        globalThis.userName = "";
+        globalThis.numAnimate = 0;
+        globalThis.cameraAnimate = 0;
+        globalThis.readyToSend = true;
+        globalThis.readyToReceive = true;
 
         // Create maze
         this.externalData = {};
@@ -77,10 +83,6 @@ class Main {
         this.state = this.objective;
         let lastTime = performance.now();
         let lastPoll = performance.now();
-        globalThis.numAnimate = 0;
-        globalThis.cameraAnimate = 0;
-        globalThis.readyToSend = true;
-        globalThis.readyToReceive = true;
 
         // Game loop
         this.scene.onBeforeRenderObservable.add(() => {
@@ -106,7 +108,7 @@ class Main {
     updateObjective() {
         this.heading.text = this.name + (this.game === "" ? "" : " (" + this.game + ")");
         let time;
-        if (globalThis.userName != undefined && globalThis.userName !== "") {
+        if (globalThis.userName !== "") {
             const x = Math.round(this.camera.position.x);
             const z = Math.round(this.camera.position.z);
             switch (this.objective) {
@@ -209,6 +211,10 @@ class Main {
     }
 
     updateCamera(dt, distInfo, doPoll) {
+        const _cameraAnimate = globalThis.cameraAnimate;
+        const _readyToSend = globalThis.readyToSend;
+        const _readyToReceive = globalThis.readyToReceive;
+
         const debug = false;
         const x = Math.round(this.camera.position.x);
         const z = Math.round(this.camera.position.z);
@@ -283,7 +289,7 @@ class Main {
         //If not a wall then max distance is one cell
         const dist = distInfo["label"].startsWith("wall") ? distInfo["dist"] : Math.max(1, distInfo["dist"]);
 
-        if (globalThis.cameraAnimate == 0) {
+        if (_cameraAnimate == 0) {
             this.camera.animations = [];
             var maxFrames = 0;
 
@@ -478,7 +484,8 @@ class Main {
     }
 
     updateSprites() {
-        if (globalThis.numAnimate == 0) {
+        if (globalThis.numAnimate <= 0) {
+            globalThis.numAnimate = 0;
             this.enemies.forEach(enemy => {
                 if (enemy.toDelete) {
                     let index = this.enemies.indexOf(enemy);
@@ -556,7 +563,6 @@ class Main {
     updatePlayers() {
         this.externalData["mode"] = 2;
         this.externalData["name"] = this.name;
-        globalThis.name = "";
         fetch('maze3D.php', {
             method: 'POST',
             headers: {
@@ -570,7 +576,7 @@ class Main {
                 this.setState(globalThis.userName, this.state);
             })
             .catch(error => {
-                globalThis.userName = "";
+                console.log("Error", e);
             });
 
         const source = new EventSource('maze3Dsse.php');
@@ -597,7 +603,7 @@ class Main {
         const then = new Date(element.lastActive);
         const inactiveTime = (now - then) / 1000;
         //console.log(globalThis.userName, "Player " + element.name + " inactive for " + inactiveTime + "s");
-        if (this.game == element.game && globalThis.userName != undefined && globalThis.userName !== "" && globalThis.userName !== element.name) {
+        if (this.game == element.game && globalThis.userName !== "" && globalThis.userName !== element.name) {
             const player = this.players.find(item => item.name === element.name);
             if (inactiveTime < 60) {
                 if (player === undefined) {
