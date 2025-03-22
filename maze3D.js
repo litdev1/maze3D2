@@ -48,7 +48,7 @@ class Main {
     maxFPS;
     state;
     step;
-    
+
     userName;
     numAnimate;
     cameraAnimate;
@@ -185,6 +185,34 @@ class Main {
                     else {
                         time = Math.round((this.objectiveData.finishTime - this.objectiveData.startTime) / 1000);
                         this.heading.text += " : " + this.enemies.length + " Yeti remaining (" + time + " s)";
+                    }
+                    break;
+                case "Avoid Yetis":
+                    //Check if a Yeti got us
+                    if ((x !== 0 || z !== 0) && !this.objectiveData.completed) {
+                        this.enemies.every(enemy => {
+                            const enemyx = Math.round(enemy.mesh.position.x);
+                            const enemyz = Math.round(enemy.mesh.position.z);
+                            if (x === enemyx && z === enemyz) {
+                                this.objectiveData.completed = true;
+                                return true;
+                            } else {
+                                this.objectiveData.finishTime = Date.now();
+                            }
+                        });
+                    }
+
+                    this.heading.text += "\n" + this.objective;
+                    if (this.objectiveData.finishTime === undefined) {
+                        this.objectiveData.startTime = Date.now();
+                    }
+                    else if (!this.objectiveData.completed) {
+                        time = Math.round((this.objectiveData.finishTime - this.objectiveData.startTime) / 1000);
+                        this.heading.text += " : (" + time + " s)";
+                    }
+                    else {
+                        time = Math.round((this.objectiveData.finishTime - this.objectiveData.startTime) / 1000);
+                        this.heading.text += " : Caught (" + time + " s)";
                     }
                     break;
             }
@@ -575,7 +603,7 @@ class Main {
                 globalThis.userName = data.name;
                 this.setState(globalThis.userName, this.state);
             })
-            .catch(error => {
+            .catch(e => {
                 console.log("Error", e);
             });
 
@@ -1136,6 +1164,7 @@ class ObjectiveData {
     visited;
     startTime;
     finishTime;
+    completed;
     constructor(maze) {
         this.numCells = 0;
         for (let z = 0; z < maze.length; z++) {
@@ -1146,6 +1175,7 @@ class ObjectiveData {
         }
         this.visited = {};
         this.startTime = new Date();
+        this.completed = false;
     }
 
     numVisited() {
